@@ -76,3 +76,29 @@ sha256
   7d6e4269a1683b46628b5f78bc15493874f516423f7a0a4c66cf56a9de47a7c2  check_hints.mjs
   0c91244b6cb73d47237eab89302ef4ce0160f4efe093cc4021280137ca722697  check_hints.wasm
   c277e0a9b736c0cbab72ae6e3193dadc656885ba8e500484a78dcd645218022a  explorer.wasm
+
+t27_examples (gHashTag/t27#10081, epic #10066)
+
+  examples.wasm        generated from specs/t27mcp/examples.t27 (module T27mcpExamples)
+                       by the C route: topic_code(string) -> u32 and pick(u32, u32) -> u32.
+  examples_table.mjs   generated: t27c gen-js specs/t27mcp/examples.t27 (PIN, TOPICS, and the
+                       row tables EX_PATH, EX_FROM, EX_TO, EX_MODULE, EX_USE, EX_FOOTER, EX_WHY)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/examples.t27 > examples.c
+  t27c gen-js specs/t27mcp/examples.t27 > examples_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry \
+      -Wl,--gc-sections -Wl,--export=topic_code -Wl,--export=pick \
+      -o examples.wasm examples.c
+
+../examples.mjs fetches a row's file at PIN (gHashTag/t27 a18d7ee14a99), cuts the lines and
+prints them. t27c 0.5.2, zig 0.16.0. examples.t27: 8 of 8 tests pass, 0 vacuous; with one row
+widened past 40 lines the row test fails (negative control). Every row's slice was run with
+`t27c test-report` at PIN: parse and typecheck clean and, where it has tests, all passing; the
+reset_sync slice has none.
+
+sha256
+  30e9ff01219064942c47160c986fe756caf457a39b7977ca71635186d713e455  examples.t27 (source)
+  fe4aa36b9dbee38020366d82621648b194615f8e2dbb69a6370eec86162a28ed  examples_table.mjs
+  e725626f74d8f9612fdb92668c6b6f1ea6ac3c877558a1578ef3cddab00fa403  examples.wasm
