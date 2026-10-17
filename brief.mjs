@@ -14,6 +14,6 @@ export function failureReasons(s) {
 }
 
 // A spec row cut to one of the spec's field lists; `fields: true` on the tools returns the whole record instead.
-const cut = (s, names) => ({ ...Object.fromEntries(names.filter((k) => s[k]?.length !== 0).map((k) => [k, s[k]])), whyFailing: failureReasons(s) });
+const cut = (s, names) => ({ ...Object.fromEntries(names.filter((k) => !Array.isArray(s[k]) || s[k].length).map((k) => [k, s[k]])), whyFailing: failureReasons(s) });
 export const brief = (s) => cut(s, S.BRIEF_FIELDS);
 export const one = (s) => cut(s, S.ONE_FIELDS);
