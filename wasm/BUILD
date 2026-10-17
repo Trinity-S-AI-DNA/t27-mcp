@@ -33,16 +33,17 @@ Rebuild (on the Railway lab, never on the owner's Mac), from specs/t27f/:
 -rdynamic is required: without it a -fno-entry wasm exports nothing.
 
 Built with t27c 0.5.2 at gHashTag/t27 57474a4f1 and zig 0.16.0, from
-reel.t27 as of gHashTag/t27 master (PR #9984) and deck.t27 as of PR #9992
-(STILL_CARD_ALPHA: a scene still shows the whole glass card; an exact frame
-uses card_alpha). deck.t27 at #9992: 15/15 tests pass, 0 vacuous, on the lab.
+reel.t27 as of gHashTag/t27 master (PR #9984) and deck.t27 as of PR #10036
+(the backdrop is brand black: BACKDROP 0x000000, aurora at zero strength;
+before it, #9992 STILL_CARD_ALPHA). deck.t27 at #10036: 16/16 tests pass,
+0 vacuous, on the lab; t27b 16 passed.
 
 sha256
   c47b21cea1d7169da6528e321cf2d2c513d3f552c0cd04fe9d37bbd5314ccacf  reel.t27 (source)
-  afb3c21ac9efe2bc081ce278b4af054827ba023abd0535f54b6abb0331ea49b2  deck.t27 (source)
+  bd8ef9fc155365c805ba716d97155bed1e4017c378dbc335e252bcb244512147  deck.t27 (source)
   997f3fc1d04e78ef3c8681c7b0b726d75341cc96928710771bca279cbd1184ba  reel.zig
-  0956aee0f6e457c94f56bf321b4400a00f6a564b5b8c0e759750e7ae6569b977  deck.zig
+  b7e1efaba309134633cd13cafe5515c0eab1ae403c229d0fca6ae3ea1dafe00c  deck.zig
   4dc1a0db9968c7a74495b499c480c2093425f653d49265d2f21c83f24e1835ac  reel.mjs
-  d9eb43d9d5e99673cc795bda20d36018f5878b6d5a170608da92426e9c2b1423  deck.mjs
+  5a060aa5777ae6f7ff0317da0c86551410a1ab87e179ad2f8bc75ba08c2c2f7c  deck.mjs
   f4ed689c93229f486184bfc6293ae6ad466b6a885d3f1bf993f9adab67aaa418  export.zig
-  333948e97de54d80db7477ee79d7e55d7aaac8e4b419fe2e7db6809e64cbfb8a  t27f.wasm
+  8399d733aebb0e8c9b34a8770b7bfa958cfbbc1feb70ad320221922fe057c791  t27f.wasm

@@ -51,7 +51,7 @@ pub const MAX_ROWS: i32 = 4;
 pub const MIN_FOCUS_R_PX: i32 = 60;
 pub const FADE_OUT_FRAMES: i32 = 8;
 pub const STILL_CARD_ALPHA: i32 = 1000;
-pub const BACKDROP: i32 = 0x06060B;
+pub const BACKDROP: i32 = 0x000000;
 pub const AURORA_COUNT: i32 = 4;
 pub const AURORA: [4]i32 = .{ 0x7C3AED, 0xC026D3, 0xF472B6, 0x3B82F6 };
 pub const TEXT: i32 = 0xFFFFFF;
@@ -61,8 +61,8 @@ pub const WHITE: i32 = 0xFFFFFF;
 pub const GLASS_FILL_PERMILLE: i32 = 70;
 pub const GLASS_BORDER_PERMILLE: i32 = 240;
 pub const GLASS_RADIUS_PERMILLE: i32 = 32;
-pub const AURORA_UNDER_CARD_PERMILLE: i32 = 300;
-pub const AURORA_UNDER_COVER_PERMILLE: i32 = 450;
+pub const AURORA_UNDER_CARD_PERMILLE: i32 = 0;
+pub const AURORA_UNDER_COVER_PERMILLE: i32 = 0;
 pub const COVER_MAP_PERMILLE: i32 = 250;
 pub const STYLE_COLOUR: [7]i32 = .{ 0xFF7A45, 0x3F3F50, 0x8B8BA7, 0xFBBF24, 0x2DD4BF, 0x5EEAD4, 0x6B7280 };
 pub const STYLE_COLOUR_COUNT: i32 = 7;
@@ -497,6 +497,17 @@ test "decoration_never_wears_a_status_colour" {
         if (!(distance(AURORA[@intCast(i)], style_colour(STYLE_GAP)) >= MIN_DECOR_DISTANCE)) __t27_assert_fail("\n  assertion failed:\n    distance(AURORA[@intCast(i)], style_colour(STYLE_GAP)) = {any}\n    MIN_DECOR_DISTANCE = {any}\n", .{ distance(AURORA[@intCast(i)], style_colour(STYLE_GAP)), MIN_DECOR_DISTANCE });
         i = i + 1;
     }
+}
+test "the_backdrop_is_brand_black" {
+    if (!(BACKDROP == 0x000000)) __t27_assert_fail("\n  assertion failed:\n    BACKDROP = {any}\n", .{ BACKDROP });
+    var i: i32 = 0;
+    _ = &i;
+    while (i < AURORA_COUNT) {
+        if (!(mix(BACKDROP, AURORA[@intCast(i)], AURORA_UNDER_CARD_PERMILLE) == 0x000000)) __t27_assert_fail("\n  assertion failed:\n    mix(BACKDROP, AURORA[@intCast(i)], AURORA_UNDER_CARD_PERMILLE) = {any}\n", .{ mix(BACKDROP, AURORA[@intCast(i)], AURORA_UNDER_CARD_PERMILLE) });
+        if (!(mix(BACKDROP, AURORA[@intCast(i)], AURORA_UNDER_COVER_PERMILLE) == 0x000000)) __t27_assert_fail("\n  assertion failed:\n    mix(BACKDROP, AURORA[@intCast(i)], AURORA_UNDER_COVER_PERMILLE) = {any}\n", .{ mix(BACKDROP, AURORA[@intCast(i)], AURORA_UNDER_COVER_PERMILLE) });
+        i = i + 1;
+    }
+    if (!(distance(style_colour(STYLE_MUTED), 0x000000) >= MIN_STATUS_DISTANCE)) __t27_assert_fail("\n  assertion failed:\n    distance(style_colour(STYLE_MUTED), 0x000000) = {any}\n    MIN_STATUS_DISTANCE = {any}\n", .{ distance(style_colour(STYLE_MUTED), 0x000000), MIN_STATUS_DISTANCE });
 }
 test "gaps_stay_loud_on_a_dark_slide" {
     if (!(style_dashed(STYLE_GAP))) @panic("assertion failed");

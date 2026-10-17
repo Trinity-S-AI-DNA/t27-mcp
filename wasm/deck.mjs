@@ -39,7 +39,7 @@ export const MAX_ROWS = 4;
 export const MIN_FOCUS_R_PX = 60;
 export const FADE_OUT_FRAMES = 8;
 export const STILL_CARD_ALPHA = 1000;
-export const BACKDROP = 0x06060B;
+export const BACKDROP = 0x000000;
 export const AURORA_COUNT = 4;
 export const AURORA = [0x7C3AED, 0xC026D3, 0xF472B6, 0x3B82F6];
 export const TEXT = 0xFFFFFF;
@@ -49,8 +49,8 @@ export const WHITE = 0xFFFFFF;
 export const GLASS_FILL_PERMILLE = 70;
 export const GLASS_BORDER_PERMILLE = 240;
 export const GLASS_RADIUS_PERMILLE = 32;
-export const AURORA_UNDER_CARD_PERMILLE = 300;
-export const AURORA_UNDER_COVER_PERMILLE = 450;
+export const AURORA_UNDER_CARD_PERMILLE = 0;
+export const AURORA_UNDER_COVER_PERMILLE = 0;
 export const COVER_MAP_PERMILLE = 250;
 export const STYLE_COLOUR = [0xFF7A45, 0x3F3F50, 0x8B8BA7, 0xFBBF24, 0x2DD4BF, 0x5EEAD4, 0x6B7280];
 export const STYLE_COLOUR_COUNT = 7;
@@ -93,6 +93,7 @@ export const MIN_GAP_DISTANCE = 300;
 // t27c gen-js: fn style_dashed was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn worst_under_card was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn worst_under_cover was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
