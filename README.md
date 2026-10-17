@@ -31,6 +31,7 @@ would look authoritative while being wrong.
 | `t27_epics` / `t27_modules` / `t27_worlds` | The Queen foundation, module map and covered repositories |
 | `t27_game` | The rules of Queen Hive and the live board state |
 | `t27_raw` | Read-only escape hatch for any JSON under `t27.ai` |
+| `t27f_view` | Draws a still of the T27F demo reel (`specs/t27f/reel.t27`) as an SVG file and returns its path; every position comes from the spec, run as `wasm/reel.wasm` (see `wasm/BUILD`) |
 
 Every tool takes `fresh: true` to bypass the five-minute cache. That parameter
 is not decoration: the publish pipeline is slower than a conversation, so a
