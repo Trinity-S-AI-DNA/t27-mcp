@@ -16,7 +16,7 @@ export async function examples(question, fetchText) {
   for (let k = 0, i; (i = W.pick(code, k) >>> 0) !== S.NO_ROW; k++) rows.push(i);
   if (!rows.length) return { topics: S.TOPICS.slice(1), note: `no topic matches "${question}"; ask for one of these` };
   const examples = await Promise.all(rows.map(async (i) => {
-    const l = (await fetchText(S.PIN, S.EX_PATH[i])).split('\n'), at = (n) => (n ? [l[n - 1]] : []);
+    const l = (await fetchText(S.PIN, S.EX_PATH[i])).split('\n'), at = (n) => (l[n - 1] === undefined ? [] : [l[n - 1]]);
     return { path: S.EX_PATH[i], lines: `${S.EX_FROM[i]}-${S.EX_TO[i]}`, why: S.EX_WHY[i],
       source: [...at(S.EX_MODULE[i]), ...at(S.EX_USE[i]), ...l.slice(S.EX_FROM[i] - 1, S.EX_TO[i]), ...at(S.EX_FOOTER[i])].join('\n') };
   }));
