@@ -5,7 +5,7 @@
   "type": "module",
   "bin": { "t27-mcp": "./server.mjs" },
   "main": "server.mjs",
-  "files": ["server.mjs", "wasm/reel.wasm", "wasm/reel.mjs", "README.md"],
+  "files": ["server.mjs", "deck-view.mjs", "wasm/t27f.wasm", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.mjs",

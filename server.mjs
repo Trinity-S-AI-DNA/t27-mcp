@@ -16,6 +16,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import * as reel from './wasm/reel.mjs';
+import * as deck from './wasm/deck.mjs';
+import { slide } from './deck-view.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -200,9 +202,10 @@ const SPEC_FILTERS = {
 };
 
 // ------------------------------------------------------------------- tooling
-// t27f_view: every position, size and style index comes from specs/t27f/reel.t27 (gHashTag/t27);
-// its bodies run as wasm/reel.wasm and its constants are wasm/reel.mjs. This glue writes SVG only.
-const R = new WebAssembly.Instance(new WebAssembly.Module(readFileSync(new URL('./wasm/reel.wasm', import.meta.url)))).exports;
+// t27f_view: every position, size and style index comes from specs/t27f/reel.t27 and, for the default
+// deck look, specs/t27f/deck.t27 (gHashTag/t27); their bodies run as wasm/t27f.wasm and their constants
+// are wasm/reel.mjs and wasm/deck.mjs. This glue writes SVG only; the deck look is deck-view.mjs.
+const R = new WebAssembly.Instance(new WebAssembly.Module(readFileSync(new URL('./wasm/t27f.wasm', import.meta.url)))).exports;
 const PAINT = ['none', '#3a3f4b', '#3b82f6', '#8a7a3a', '#ffd45a', '#22c55e', '#1f2229']; // host palette by STYLE_*
 const esc = (v) => String(v).replace(/[<>&"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -643,31 +646,34 @@ const tools = [
   {
     name: 't27f_view',
     description:
-      'Draw a still of the T27F demo reel (specs/t27f/reel.t27) as an SVG file and return its path. The Claude Code desktop app opens the path in its Browser pane; in a terminal, open the file yourself.',
+      'Draw a still of the T27F demo reel (specs/t27f/reel.t27) as an SVG file and return its path. By default it is a presentation slide (specs/t27f/deck.t27); look 0 is the plain map. The Claude Code desktop app opens the path in its Browser pane; in a terminal, open the file yourself.',
     inputSchema: { type: 'object', properties: {
       scene: { type: 'integer', description: 'Demo scene 0..4; its still frame is drawn (default 2, the focus still)' }, frame: { type: 'integer', description: 'Exact frame instead of a scene still' },
       preset: { type: 'integer', description: '0 wide 1280x720 (default), 1 square 1080x1080, 2 tall 1080x1920' }, out: { type: 'string', description: 'Output file (default: the temp directory)' },
       status: { type: 'array', items: { type: 'integer' }, description: 'Lesson status code per cell (27); a missing one is a gap' }, labels: { type: 'array', items: { type: 'string' }, description: 'Label per cell (default: the cell number)' },
-      host: { type: 'integer', description: 'Host code for the channel line (default 1, Claude Code desktop)' } } },
-    handler: async ({ scene = 2, frame, preset = reel.PRESET_WIDE, status = [], labels = [], host = reel.HOST_CLAUDE_CODE_DESKTOP, out }) => {
+      host: { type: 'integer', description: 'Host code for the channel line (default 1, Claude Code desktop)' }, look: { type: 'integer', description: '1 deck slide (default), 0 plain map' },
+      title: { type: 'string', description: 'Slide headline, at most 2 lines (default: the scene name)' }, subtitle: { type: 'string', description: 'Cover subtitle' }, rows: { type: 'array', items: { type: 'string' }, description: 'Card rows on a split slide, at most 4' } } },
+    handler: async ({ scene = 2, frame, preset = deck.DEFAULT_PRESET, status = [], labels = [], host = reel.HOST_CLAUDE_CODE_DESKTOP, out, look = deck.DEFAULT_LOOK, title, subtitle, rows }) => {
       const f = frame ?? R.demo_still(scene), s = Number.isInteger(f) ? R.demo_scene_at(f) : reel.END_OF_REEL;
       if (s === reel.END_OF_REEL) throw new Error(`no such frame or scene: the demo reel has frames 0..${R.demo_frames() - 1}`);
       if (!(preset >= 0 && preset < reel.PRESET_COUNT)) throw new Error(`preset must be 0..${reel.PRESET_COUNT - 1}`);
       if (!status.every((v) => Number.isInteger(v) && v >= 0 && v < 256)) throw new Error('status codes are integers 0..255');
+      if (look !== deck.LOOK_MAP && look !== deck.LOOK_DECK) throw new Error(`look must be ${deck.LOOK_MAP} (map) or ${deck.LOOK_DECK} (deck)`);
       const W = reel.PRESET_W[preset], H = reel.PRESET_H[preset], r = R.demo_r(f, preset), focus = reel.DEMO_CELL[s];
+      const name = reel.SCENE_NAMES.split(',')[reel.DEMO_KIND[s]], n = R.demo_frames(), cap = `T27F demo reel - scene ${s} (${name}) - frame ${f} of ${n}`;
       const svg = [`<rect width="${W}" height="${H}" fill="#0b0d12"/>`];
-      for (let k = 0; R.valid_cell(k); k++) {
+      if (look === deck.LOOK_DECK) svg.splice(0, 1, slide(R, { f, s, still: frame === undefined, preset, status, labels, kicker: cap, title: title ?? name, subtitle, rows }));
+      else for (let k = 0; R.valid_cell(k); k++) {
         const st = R.cell_style(status[k] ?? 0), on = k === focus;
         const pts = [0, 1, 2, 3, 4, 5].map((i) => `${R.demo_corner_sx(f, preset, k, i)},${R.demo_corner_sy(f, preset, k, i)}`);
         svg.push(`<polygon points="${pts.join(' ')}" fill="${PAINT[st]}" stroke="${on ? '#fff' : st === reel.STYLE_GAP ? '#5ad1ff' : '#0b0d12'}" stroke-width="${on ? 4 : 2}"/>`,
           `<text x="${R.demo_sx(f, preset, R.cell_x(k))}" y="${R.demo_sy(f, preset, R.cell_y(k))}" font-size="${Math.max(10, r / 3)}" fill="#e6e8ee" text-anchor="middle" dominant-baseline="middle">${esc(labels[k] ?? k)}</text>`);
       }
-      const name = reel.SCENE_NAMES.split(',')[reel.DEMO_KIND[s]], n = R.demo_frames();
       const ch = Object.keys(reel).find((c) => c.startsWith('CHANNEL_') && reel[c] === R.channel_for(host)) || 'none';
-      svg.push(`<text x="24" y="${H - 24}" font-size="20" fill="#9aa0ac">T27F demo reel - scene ${s} (${name}) - frame ${f} of ${n}</text>`);
-      const path = out || join(tmpdir(), `t27f-demo-f${f}-p${preset}.svg`);
+      if (look === deck.LOOK_MAP) svg.push(`<text x="24" y="${H - 24}" font-size="20" fill="#9aa0ac">${cap}</text>`);
+      const path = out || join(tmpdir(), `t27f-demo-f${f}-p${preset}-${look === deck.LOOK_DECK ? 'deck' : 'map'}.svg`);
       writeFileSync(path, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif"><svg width="${W}" height="${H}">${svg.join('')}</svg></svg>\n`);
-      return `${path}\nT27F demo reel, scene ${s} (${name}), frame ${f} of ${n}, ${W}x${H}, focus cell ${focus}; channel for host ${host}: ${ch}.`;
+      return `${path}\nT27F demo reel, ${look === deck.LOOK_DECK ? `${['cover', 'stage', 'split'][R.layout_for(R.demo_kind(s))]} slide` : 'map'}, scene ${s} (${name}), frame ${f} of ${n}, ${W}x${H}, focus cell ${focus}; channel for host ${host}: ${ch}.`;
     },
   },
 ];

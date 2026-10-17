@@ -1,7 +1,7 @@
-// Hand glue: export every pub fn of a t27c-generated Zig module whose parameters and result are
+// Hand glue: export every pub fn of the t27c-generated Zig modules whose parameters and result are
 // integers or bools, under its own name, so a wasm host can call the spec's bodies. It knows no
 // spec: it decides nothing and computes nothing. Build: see wasm/BUILD in gHashTag/t27-mcp.
-const m = @import("reel.zig");
+const mods = .{ @import("reel.zig"), @import("deck.zig") };
 
 fn scalar(comptime T: type) bool {
     return switch (@typeInfo(T)) {
@@ -20,19 +20,21 @@ fn C(comptime f: anytype) type {
         2 => struct { fn c(a: P[0].type.?, b: P[1].type.?) callconv(.c) R { return f(a, b); } },
         3 => struct { fn c(a: P[0].type.?, b: P[1].type.?, d: P[2].type.?) callconv(.c) R { return f(a, b, d); } },
         4 => struct { fn c(a: P[0].type.?, b: P[1].type.?, d: P[2].type.?, e: P[3].type.?) callconv(.c) R { return f(a, b, d, e); } },
+        5 => struct { fn c(a: P[0].type.?, b: P[1].type.?, d: P[2].type.?, e: P[3].type.?, g: P[4].type.?) callconv(.c) R { return f(a, b, d, e, g); } },
         else => @compileError("arity"),
     };
 }
 
 comptime {
-    for (@typeInfo(m).@"struct".decls) |d| {
+    for (mods, 0..) |m, i| for (@typeInfo(m).@"struct".decls) |d| {
+        if (i > 0 and @hasDecl(mods[0], d.name)) continue;
         const v = @field(m, d.name);
         const T = @TypeOf(v);
         if (@typeInfo(T) != .@"fn") continue;
         const I = @typeInfo(T).@"fn";
-        if (I.params.len > 4 or !scalar(I.return_type.?)) continue;
+        if (I.params.len > 5 or !scalar(I.return_type.?)) continue;
         var ok = true;
         for (I.params) |p| ok = ok and scalar(p.type.?);
         if (ok) @export(&C(v).c, .{ .name = d.name });
-    }
+    };
 }

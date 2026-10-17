@@ -401,6 +401,27 @@ pub fn demo_sy(f: i32, preset: u8, y: i32) i32 {
 pub fn demo_r(f: i32, preset: u8) i32 {
     return screen_r(camera_hw(DEMO_COUNT, DEMO_KIND, DEMO_CELL, DEMO_FRAMES, f), preset);
 }
+pub fn demo_cx(f: i32) i32 {
+    return camera_cx(DEMO_COUNT, DEMO_KIND, DEMO_CELL, DEMO_FRAMES, f);
+}
+pub fn demo_cy(f: i32) i32 {
+    return camera_cy(DEMO_COUNT, DEMO_KIND, DEMO_CELL, DEMO_LENS, DEMO_FRAMES, f);
+}
+pub fn demo_hw(f: i32) i32 {
+    return camera_hw(DEMO_COUNT, DEMO_KIND, DEMO_CELL, DEMO_FRAMES, f);
+}
+pub fn demo_kind(scene: i32) u8 {
+    if ((scene < 0) or (scene >= DEMO_COUNT)) {
+        return SCENE_KIND_COUNT;
+    }
+    return DEMO_KIND[@intCast(scene)];
+}
+pub fn demo_scene_start(scene: i32) i32 {
+    if ((scene < 0) or (scene >= DEMO_COUNT)) {
+        return END_OF_REEL;
+    }
+    return scene_start(DEMO_FRAMES, scene);
+}
 pub fn demo_corner_sx(f: i32, preset: u8, cell: i32, i: i32) i32 {
     return demo_sx(f, preset, cell_x(cell) + corner_dx(i));
 }
@@ -600,6 +621,30 @@ test "demo_entry_points_match_the_reel" {
     if (!(demo_r(224, PRESET_WIDE) == screen_r(FOCUS_HW, PRESET_WIDE))) __t27_assert_fail("\n  assertion failed:\n    demo_r(224, PRESET_WIDE) = {any}\n    screen_r(FOCUS_HW, PRESET_WIDE) = {any}\n", .{ demo_r(224, PRESET_WIDE), screen_r(FOCUS_HW, PRESET_WIDE) });
     if (!(demo_corner_sy(224, PRESET_WIDE, 10, 0) == (360 - demo_r(224, PRESET_WIDE)))) __t27_assert_fail("\n  assertion failed:\n    demo_corner_sy(224, PRESET_WIDE, 10, 0) = {any}\n    360 - demo_r(224, PRESET_WIDE) = {any}\n", .{ demo_corner_sy(224, PRESET_WIDE, 10, 0), 360 - demo_r(224, PRESET_WIDE) });
     if (!(demo_sy(demo_still(1), PRESET_WIDE, lens_cy(0)) == 360)) __t27_assert_fail("\n  assertion failed:\n    demo_sy(demo_still(1), PRESET_WIDE, lens_cy(0)) = {any}\n", .{ demo_sy(demo_still(1), PRESET_WIDE, lens_cy(0)) });
+}
+test "demo_camera_is_the_reel_camera" {
+    if (!(demo_cx(224) == cell_x(10))) __t27_assert_fail("\n  assertion failed:\n    demo_cx(224) = {any}\n    cell_x(10) = {any}\n", .{ demo_cx(224), cell_x(10) });
+    if (!(demo_cy(224) == cell_y(10))) __t27_assert_fail("\n  assertion failed:\n    demo_cy(224) = {any}\n    cell_y(10) = {any}\n", .{ demo_cy(224), cell_y(10) });
+    if (!(demo_hw(224) == FOCUS_HW)) __t27_assert_fail("\n  assertion failed:\n    demo_hw(224) = {any}\n    FOCUS_HW = {any}\n", .{ demo_hw(224), FOCUS_HW });
+    if (!(demo_cy(demo_still(1)) == lens_cy(0))) __t27_assert_fail("\n  assertion failed:\n    demo_cy(demo_still(1)) = {any}\n    lens_cy(0) = {any}\n", .{ demo_cy(demo_still(1)), lens_cy(0) });
+    var s: i32 = 0;
+    _ = &s;
+    while (s < DEMO_COUNT) {
+        const f: i32 = demo_still(s);
+        if (!(demo_sx(f, PRESET_TALL, 0) == screen_x(demo_cx(f), demo_hw(f), PRESET_TALL, 0))) __t27_assert_fail("\n  assertion failed:\n    demo_sx(f, PRESET_TALL, 0) = {any}\n    screen_x(demo_cx(f), demo_hw(f), PRESET_TALL, 0) = {any}\n", .{ demo_sx(f, PRESET_TALL, 0), screen_x(demo_cx(f), demo_hw(f), PRESET_TALL, 0) });
+        if (!(demo_sy(f, PRESET_TALL, 0) == screen_y(demo_cy(f), demo_hw(f), PRESET_TALL, 0))) __t27_assert_fail("\n  assertion failed:\n    demo_sy(f, PRESET_TALL, 0) = {any}\n    screen_y(demo_cy(f), demo_hw(f), PRESET_TALL, 0) = {any}\n", .{ demo_sy(f, PRESET_TALL, 0), screen_y(demo_cy(f), demo_hw(f), PRESET_TALL, 0) });
+        if (!(demo_scene_at(demo_scene_start(s)) == s)) __t27_assert_fail("\n  assertion failed:\n    demo_scene_at(demo_scene_start(s)) = {any}\n    s = {any}\n", .{ demo_scene_at(demo_scene_start(s)), s });
+        if (!(demo_scene_start(s) <= f)) __t27_assert_fail("\n  assertion failed:\n    demo_scene_start(s) = {any}\n    f = {any}\n", .{ demo_scene_start(s), f });
+        s = s + 1;
+    }
+    if (!(demo_kind(0) == SCENE_OVERVIEW)) __t27_assert_fail("\n  assertion failed:\n    demo_kind(0) = {any}\n    SCENE_OVERVIEW = {any}\n", .{ demo_kind(0), SCENE_OVERVIEW });
+    if (!(demo_kind(2) == SCENE_FOCUS)) __t27_assert_fail("\n  assertion failed:\n    demo_kind(2) = {any}\n    SCENE_FOCUS = {any}\n", .{ demo_kind(2), SCENE_FOCUS });
+    if (!(demo_kind(4) == SCENE_CALL)) __t27_assert_fail("\n  assertion failed:\n    demo_kind(4) = {any}\n    SCENE_CALL = {any}\n", .{ demo_kind(4), SCENE_CALL });
+    if (!(demo_kind(5) == SCENE_KIND_COUNT)) __t27_assert_fail("\n  assertion failed:\n    demo_kind(5) = {any}\n    SCENE_KIND_COUNT = {any}\n", .{ demo_kind(5), SCENE_KIND_COUNT });
+    if (!(demo_kind(-1) == SCENE_KIND_COUNT)) __t27_assert_fail("\n  assertion failed:\n    demo_kind(-1) = {any}\n    SCENE_KIND_COUNT = {any}\n", .{ demo_kind(-1), SCENE_KIND_COUNT });
+    if (!(demo_scene_start(0) == 0)) __t27_assert_fail("\n  assertion failed:\n    demo_scene_start(0) = {any}\n", .{ demo_scene_start(0) });
+    if (!(demo_scene_start(2) == 135)) __t27_assert_fail("\n  assertion failed:\n    demo_scene_start(2) = {any}\n", .{ demo_scene_start(2) });
+    if (!(demo_scene_start(5) == END_OF_REEL)) __t27_assert_fail("\n  assertion failed:\n    demo_scene_start(5) = {any}\n    END_OF_REEL = {any}\n", .{ demo_scene_start(5), END_OF_REEL });
 }
 test "overview_still_fits_every_frame" {
     var p: u8 = 0;

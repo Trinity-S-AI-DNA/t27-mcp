@@ -105,8 +105,14 @@ export const DEMO_FRAMES = [60, 75, 90, 75, 60, 0, 0, 0, 0];
 // t27c gen-js: fn demo_sx was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn demo_sy was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn demo_r was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn demo_cx was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn demo_cy was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn demo_hw was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn demo_kind was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn demo_scene_start was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn demo_corner_sx was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn demo_corner_sy was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
