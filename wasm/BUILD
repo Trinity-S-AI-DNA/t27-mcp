@@ -59,3 +59,32 @@ sha256
   18756722b37160ffa7dd021b4bcf02485dccf1506e9b085e6a36d017d9d6911b  spec_graph_view.mjs
   e9757024442a6723ab9b97fe32b958b8d6b755b1d3d08337d8e3fb04cfe2a140  export.zig
   950948f93497c97dc5d3da16155a2af00946717308aaedf001fa3755b95a783f  t27f.wasm
+
+t27_check (gHashTag/t27#10073, epic #10066)
+
+  explorer.wasm      the bootstrap parser and typechecker as wasm: gHashTag/t27
+                     bindings/wasm-explorer built for wasm32-unknown-unknown at
+                     gHashTag/t27 063da049b and copied unchanged. It holds no verdict of
+                     its own; ../check.mjs reads its JSON.
+  check_hints.wasm   generated from specs/t27mcp/check_hints.t27 (module T27mcpCheckHints)
+                     by the C route, which needs no hand glue: a `string` parameter
+                     arrives as a NUL-terminated `const char*`.
+  check_hints.mjs    generated: t27c gen-js specs/t27mcp/check_hints.t27 (HINTS, codes)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/check_hints.t27 > check_hints.c
+  t27c gen-js specs/t27mcp/check_hints.t27 > check_hints.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry \
+      -Wl,--gc-sections -Wl,--export=hint_code -Wl,--export=line_of \
+      -o check_hints.wasm check_hints.c
+
+A caller runs `_initialize()` once, then passes a message as a NUL-terminated string in
+the instance's memory. t27c 0.5.2, zig 0.16.0. check_hints.t27: 13 of 13 tests pass, 0
+vacuous; with the cast rule's key mutated the cast test fails (negative control).
+
+sha256
+  a7cf4d3a1641f1eac295c20f8880b592b5fce62e8774aae46e466e50fffb77df  check_hints.t27 (source)
+  7d6e4269a1683b46628b5f78bc15493874f516423f7a0a4c66cf56a9de47a7c2  check_hints.mjs
+  0c91244b6cb73d47237eab89302ef4ce0160f4efe093cc4021280137ca722697  check_hints.wasm
+  c277e0a9b736c0cbab72ae6e3193dadc656885ba8e500484a78dcd645218022a  explorer.wasm
