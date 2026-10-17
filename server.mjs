@@ -17,6 +17,7 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import * as reel from './wasm/reel.mjs';
 import * as deck from './wasm/deck.mjs';
+import * as G from './wasm/spec_graph_view.mjs';
 import { slide } from './deck-view.mjs';
 
 const VERSION = '1.1.0';
@@ -205,6 +206,7 @@ const SPEC_FILTERS = {
 // t27f_view: every position, size and style index comes from specs/t27f/reel.t27 and, for the default
 // deck look, specs/t27f/deck.t27 (gHashTag/t27); their bodies run as wasm/t27f.wasm and their constants
 // are wasm/reel.mjs and wasm/deck.mjs. This glue writes SVG only; the deck look is deck-view.mjs.
+// t27f_graph draws specs/t27f/spec_graph_view.t27 the same way; its constants are wasm/spec_graph_view.mjs.
 const R = new WebAssembly.Instance(new WebAssembly.Module(readFileSync(new URL('./wasm/t27f.wasm', import.meta.url)))).exports;
 const PAINT = ['none', '#3a3f4b', '#3b82f6', '#8a7a3a', '#ffd45a', '#22c55e', '#1f2229']; // host palette by STYLE_*
 const esc = (v) => String(v).replace(/[<>&"]/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -674,6 +676,31 @@ const tools = [
       const path = out || join(tmpdir(), `t27f-demo-f${f}-p${preset}-${look === deck.LOOK_DECK ? 'deck' : 'map'}.svg`);
       writeFileSync(path, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif"><svg width="${W}" height="${H}">${svg.join('')}</svg></svg>\n`);
       return `${path}\nT27F demo reel, ${look === deck.LOOK_DECK ? `${['cover', 'stage', 'split'][R.layout_for(R.demo_kind(s))]} slide` : 'map'}, scene ${s} (${name}), frame ${f} of ${n}, ${W}x${H}, focus cell ${focus}; channel for host ${host}: ${ch}.`;
+    },
+  },
+  {
+    name: 't27f_graph',
+    description:
+      'Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, inference label and source lines. Only the spec_graph fixtures exist until t27c exports graphs: 0 tutorial 08, 1 tutorial 08 with a suggestion.',
+    inputSchema: { type: 'object', properties: { fixture: { type: 'integer', description: '0 tutorial 08 (default), 1 with a suggestion' }, out: { type: 'string', description: 'Output file (default: the temp directory)' } } },
+    handler: async ({ fixture = 0, out }) => {
+      if (fixture !== 0 && fixture !== 1) throw new Error('fixture must be 0 or 1');
+      const v = R.fx_verdict(fixture), hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
+      if (v !== G.VIEW_OK) throw new Error(`the view refuses fixture ${fixture}: verdict ${v}`);
+      const nm = (p, k) => Object.keys(G).find((c) => c.startsWith(p) && !c.endsWith('KINDS') && G[c] === k)?.slice(p.length).toLowerCase() ?? k;
+      const W = R.fx_width(fixture), H = R.fx_height(fixture), svg = [`<rect width="${W}" height="${H}" fill="${hex(G.VIEW_BACKDROP)}"/>`];
+      for (let j = 0; j < R.fx_edge_count(fixture); j++) {
+        const d = R.fx_edge_dash(fixture, j);
+        svg.push(`<line x1="${R.fx_edge_x1(fixture, j)}" y1="${R.fx_edge_y1(fixture, j)}" x2="${R.fx_edge_x2(fixture, j)}" y2="${R.fx_edge_y2(fixture, j)}" stroke="${hex(R.fx_edge_stroke(fixture, j))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}><title>${nm('EDGE_', R.fx_edge_kind(fixture, j))}, line ${R.fx_edge_line(fixture, j)}</title></line>`);
+      }
+      for (let i = 0; i < R.fx_node_count(fixture); i++) {
+        const x = R.fx_node_x(fixture, i), y = R.fx_node_y(fixture, i), d = R.fx_node_dash(fixture, i), a = R.fx_node_line_start(fixture, i), b = R.fx_node_line_end(fixture, i);
+        svg.push(`<rect x="${x}" y="${y}" width="${R.fx_node_w(fixture, i)}" height="${R.fx_node_h(fixture, i)}" rx="6" fill="${hex(R.fx_node_fill(fixture, i))}" stroke="${hex(R.fx_node_stroke(fixture, i))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}/>`,
+          `<text x="${x + 8}" y="${y + G.VIEW_FONT_PX + 6}" font-size="${G.VIEW_FONT_PX}" fill="${hex(G.VIEW_TEXT)}">${nm('NODE_', R.fx_node_kind(fixture, i))} ${i} - ${nm('LABEL_', R.fx_node_label(fixture, i))} - L${a}${b > a ? `-${b}` : ''}</text>`);
+      }
+      const path = out || join(tmpdir(), `t27f-graph-fx${fixture}.svg`);
+      writeFileSync(path, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif">${svg.join('')}</svg>\n`);
+      return `${path}\nT27F graph view, fixture ${fixture}: ${R.fx_node_count(fixture)} nodes, ${R.fx_edge_count(fixture)} edges, ${W}x${H}.`;
     },
   },
 ];
