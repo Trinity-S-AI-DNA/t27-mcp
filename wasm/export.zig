@@ -1,7 +1,12 @@
 // Hand glue: export every pub fn of the t27c-generated Zig modules whose parameters and result are
 // integers or bools, under its own name, so a wasm host can call the spec's bodies. It knows no
 // spec: it decides nothing and computes nothing. Build: see wasm/BUILD in gHashTag/t27-mcp.
-const mods = .{ @import("reel.zig"), @import("deck.zig") };
+const mods = .{ @import("reel.zig"), @import("deck.zig"), @import("spec_graph_view.zig") };
+
+fn seen(comptime i: usize, comptime name: []const u8) bool {
+    inline for (mods, 0..) |m, k| if (k < i and @hasDecl(m, name)) return true;
+    return false;
+}
 
 fn scalar(comptime T: type) bool {
     return switch (@typeInfo(T)) {
@@ -26,8 +31,9 @@ fn C(comptime f: anytype) type {
 }
 
 comptime {
+    @setEvalBranchQuota(100000);
     for (mods, 0..) |m, i| for (@typeInfo(m).@"struct".decls) |d| {
-        if (i > 0 and @hasDecl(mods[0], d.name)) continue;
+        if (seen(i, d.name)) continue;
         const v = @field(m, d.name);
         const T = @TypeOf(v);
         if (@typeInfo(T) != .@"fn") continue;
