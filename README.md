@@ -31,6 +31,7 @@ would look authoritative while being wrong.
 | `t27_epics` / `t27_modules` / `t27_worlds` | The Queen foundation, module map and covered repositories |
 | `t27_game` | The rules of Queen Hive and the live board state |
 | `t27_raw` | Read-only escape hatch for any JSON under `t27.ai` |
+| `t27f_view` | Draws a still of the T27F demo reel as an SVG file and returns its path. By default the still is a presentation slide (`specs/t27f/deck.t27`); `look: 0` draws the plain map (`specs/t27f/reel.t27`). A scene still shows the whole glass card (`STILL_CARD_ALPHA`); an exact `frame` shows the card as the video would (`card_alpha`). Every position, size and colour comes from the specs, run as `wasm/t27f.wasm` (see `wasm/BUILD`) |
 
 Every tool takes `fresh: true` to bypass the five-minute cache. That parameter
 is not decoration: the publish pipeline is slower than a conversation, so a
