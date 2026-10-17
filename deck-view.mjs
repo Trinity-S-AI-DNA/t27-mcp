@@ -10,7 +10,7 @@ const esc = (v) => String(v).replace(/[<>&"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const wrap = (t, n) => String(t).split(/\s+/).filter(Boolean).reduce((a, w) => (a.length && `${a.at(-1)} ${w}`.length <= n ? (a[a.length - 1] += ` ${w}`) : a.push(w), a), []);
 const lines = (ls, x, y, size, lead, fill, weight = 400) => ls.map((l, i) => `<text x="${x}" y="${y + i * lead + Math.round(lead * 0.78)}" font-size="${size}" font-weight="${weight}" fill="${hex(fill)}">${esc(l)}</text>`).join('');
 
-export function slide(R, { f, s, preset: p, status, labels, kicker, title, subtitle = '', rows = [] }) {
+export function slide(R, { f, s, still, preset: p, status, labels, kicker, title, subtitle = '', rows = [] }) {
   const L = R.layout_for(R.demo_kind(s)), W = reel.PRESET_W[p], H = reel.PRESET_H[p];
   const box = (r) => [0, 1, 2, 3].map((j) => R.region_px(L, p, r, j));
   const [cx, cy, hw] = [R.demo_cx(f), R.demo_cy(f), R.demo_hw(f)], sr = R.slide_r(hw, L, p);
@@ -30,7 +30,7 @@ export function slide(R, { f, s, preset: p, status, labels, kicker, title, subti
   out.push('</g>');
   const lead = R.leading_px(big, L === D.LAYOUT_COVER ? D.COVER_LEADING_PERMILLE : D.HEADLINE_LEADING_PERMILLE), pad = D.PAD_PX[p];
   if (L === D.LAYOUT_SPLIT) {
-    const a = R.card_alpha(f - R.demo_scene_start(s), reel.DEMO_FRAMES[s]) / 1000, rx = Math.round(D.GLASS_RADIUS_PERMILLE * Math.min(W, H) / 1000);
+    const a = (still ? D.STILL_CARD_ALPHA : R.card_alpha(f - R.demo_scene_start(s), reel.DEMO_FRAMES[s])) / 1000, rx = Math.round(D.GLASS_RADIUS_PERMILLE * Math.min(W, H) / 1000);
     out.push(`<g opacity="${a}"><rect x="${tb[0]}" y="${tb[1]}" width="${tb[2] - tb[0]}" height="${tb[3] - tb[1]}" rx="${rx}" fill="${hex(D.WHITE)}" fill-opacity="${D.GLASS_FILL_PERMILLE / 1000}" stroke="${hex(D.WHITE)}" stroke-opacity="${D.GLASS_BORDER_PERMILLE / 1000}"/>`,
       lines(head, tb[0] + pad, tb[1] + pad, big, lead, D.TEXT, 700), lines(body, tb[0] + pad, tb[1] + pad + head.length * lead + D.HEADLINE_GAP_PX, D.BODY_PX[p], R.leading_px(D.BODY_PX[p], D.ROW_LEADING_PERMILLE), D.TEXT_DIM), '</g>');
   } else out.push(lines(head, tb[0], tb[1] + Math.round((tb[3] - tb[1] - head.length * lead) / 2), big, lead, D.TEXT, 700));

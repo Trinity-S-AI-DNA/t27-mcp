@@ -50,6 +50,7 @@ pub const MAX_HEADLINE_LINES: i32 = 2;
 pub const MAX_ROWS: i32 = 4;
 pub const MIN_FOCUS_R_PX: i32 = 60;
 pub const FADE_OUT_FRAMES: i32 = 8;
+pub const STILL_CARD_ALPHA: i32 = 1000;
 pub const BACKDROP: i32 = 0x06060B;
 pub const AURORA_COUNT: i32 = 4;
 pub const AURORA: [4]i32 = .{ 0x7C3AED, 0xC026D3, 0xF472B6, 0x3B82F6 };
@@ -459,6 +460,21 @@ test "the_card_fades_and_never_pops" {
             const a: i32 = card_alpha(k, n);
             if (!((a >= 0) and (a <= 1000))) __t27_assert_fail("\n  assertion failed:\n    a = {any}\n", .{ a });
             if (!(absdiff(a, card_alpha(k - 1, n)) <= (1000 / FADE_OUT_FRAMES))) __t27_assert_fail("\n  assertion failed:\n    absdiff(a, card_alpha(k - 1, n)) = {any}\n    1000 / FADE_OUT_FRAMES = {any}\n", .{ absdiff(a, card_alpha(k - 1, n)), 1000 / FADE_OUT_FRAMES });
+            k = k + 1;
+        }
+        n = n + 1;
+    }
+}
+test "a_still_shows_the_whole_card" {
+    var n: i32 = MIN_SCENE_FRAMES;
+    _ = &n;
+    while (n <= 300) {
+        if (!(STILL_CARD_ALPHA == card_alpha(TRANSITION_FRAMES, n))) __t27_assert_fail("\n  assertion failed:\n    STILL_CARD_ALPHA = {any}\n    card_alpha(TRANSITION_FRAMES, n) = {any}\n", .{ STILL_CARD_ALPHA, card_alpha(TRANSITION_FRAMES, n) });
+        if (!(STILL_CARD_ALPHA != card_alpha(n - 1, n))) __t27_assert_fail("\n  assertion failed:\n    STILL_CARD_ALPHA = {any}\n    card_alpha(n - 1, n) = {any}\n", .{ STILL_CARD_ALPHA, card_alpha(n - 1, n) });
+        var k: i32 = 0;
+        _ = &k;
+        while (k < n) {
+            if (!(card_alpha(k, n) <= STILL_CARD_ALPHA)) __t27_assert_fail("\n  assertion failed:\n    card_alpha(k, n) = {any}\n    STILL_CARD_ALPHA = {any}\n", .{ card_alpha(k, n), STILL_CARD_ALPHA });
             k = k + 1;
         }
         n = n + 1;

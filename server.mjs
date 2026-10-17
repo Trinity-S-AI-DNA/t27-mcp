@@ -662,7 +662,7 @@ const tools = [
       const W = reel.PRESET_W[preset], H = reel.PRESET_H[preset], r = R.demo_r(f, preset), focus = reel.DEMO_CELL[s];
       const name = reel.SCENE_NAMES.split(',')[reel.DEMO_KIND[s]], n = R.demo_frames(), cap = `T27F demo reel - scene ${s} (${name}) - frame ${f} of ${n}`;
       const svg = [`<rect width="${W}" height="${H}" fill="#0b0d12"/>`];
-      if (look === deck.LOOK_DECK) svg.splice(0, 1, slide(R, { f, s, preset, status, labels, kicker: cap, title: title ?? name, subtitle, rows }));
+      if (look === deck.LOOK_DECK) svg.splice(0, 1, slide(R, { f, s, still: frame === undefined, preset, status, labels, kicker: cap, title: title ?? name, subtitle, rows }));
       else for (let k = 0; R.valid_cell(k); k++) {
         const st = R.cell_style(status[k] ?? 0), on = k === focus;
         const pts = [0, 1, 2, 3, 4, 5].map((i) => `${R.demo_corner_sx(f, preset, k, i)},${R.demo_corner_sy(f, preset, k, i)}`);
