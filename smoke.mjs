@@ -112,6 +112,14 @@ const run = async () => {
   const arity = await call('t27_check', { source: `${M('return a;')}pub fn g() -> u8 {\n    return f(1, 2);\n}\n` });
   check('t27_check invents no hint for a message the spec does not know', !arity.ok && arity.diagnostics[0].hint === undefined, arity.diagnostics[0]?.message);
 
+  // t27_examples: the table is specs/t27mcp/examples.t27; the lines are fetched from the pinned commit.
+  const ex = await call('t27_examples', { topic: 'clocked counter' });
+  check('t27_examples returns clocked slices of at most 40 lines', ex.examples?.length >= 1 && ex.examples.every((e) => e.source.split('\n').length <= 40) && /fn on_clock/.test(ex.examples[0].source), ex.examples?.length);
+  const ex2 = await call('t27_examples', { topic: 'async reset' });
+  check('t27_examples keeps async apart from sync', ex2.topic === 'reset_async' && (await call('t27_examples', { topic: 'sync reset' })).topic === 'reset_sync');
+  const ex3 = await call('t27_examples', { topic: 'axi4 burst' });
+  check('t27_examples invents no example for an unknown topic', ex3.examples === undefined && ex3.topics.includes('comb'));
+
   child.kill();
   console.log(failed ? `\n${failed} check(s) failed` : `\nall checks passed`);
   process.exit(failed ? 1 : 0);
