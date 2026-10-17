@@ -18,6 +18,7 @@ import { createInterface } from 'node:readline';
 import * as reel from './wasm/reel.mjs';
 import * as deck from './wasm/deck.mjs';
 import { slide } from './deck-view.mjs';
+import { check } from './check.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -641,6 +642,16 @@ const tools = [
           '5_contribute': 'Open an issue or a pull request on the owning repository. Evidence, not motion, closes a cell.',
         },
       };
+    },
+  },
+  {
+    name: 't27_check',
+    description:
+      'Check .t27 source before you commit to it: parse and typecheck with the real compiler front end, and get each error with its line, the source line and a short "write this instead" hint for foreign syntax (`in` as a name, `as u3`, `x++`, `a ? b : c`, `match`). ok:true means it parses and typechecks, not that its tests pass.',
+    inputSchema: { type: 'object', properties: { source: { type: 'string', description: 'The .t27 source text' } }, required: ['source'] },
+    handler: ({ source }) => {
+      if (typeof source !== 'string' || !source.trim()) throw new Error('source must be non-empty .t27 text');
+      return check(source);
     },
   },
   {
