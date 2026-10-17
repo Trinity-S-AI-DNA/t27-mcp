@@ -24,7 +24,7 @@ would look authoritative while being wrong.
 |---|---|
 | `t27_status` | Provenance of the published surface: source commit, spec count, health split with every failing spec named and explained, backend failures, biggest tags |
 | `t27_specs` | Search the corpus by path, repo, category, tag, health, failing backend, round-trip loss, type-check errors or size; returns tallies over the matched set |
-| `t27_spec` | One spec's whole manifest record and, on request, its actual `.t27` source text |
+| `t27_spec` | One spec's short record (health, why it fails, loss, type-check errors, failing backends, size, summary, tags) and, on request, its actual `.t27` source text; `fields: true` returns the whole manifest record (AST node kinds, emitted bytes per backend). Which fields a short row keeps, and why a spec fails, are decided in `specs/t27mcp/spec_brief.t27`, run as `wasm/spec_brief.wasm` (see `wasm/BUILD`); `t27_specs` rows use the same short list |
 | `t27_grep` | Regular-expression search *inside* spec sources, over a filtered subset |
 | `t27_formats` / `t27_format` | The numeric-format catalog from the live SSOT, and one format's full row |
 | `t27_issues` | The cross-repo issue index, with the atlas's issue-to-spec links (relation, coverage, why) |
@@ -48,7 +48,7 @@ clean, but because nothing downstream of the parser ever ran. Its AST counters
 (`nodes`, `tokens`, `depth`) are all zero and `outBytes` is empty. A spec that
 parsed fine but lost a backend looks superficially similar and is a completely
 different problem. `whyFailing` separates them, derived from observable
-manifest fields only. As of corpus `93228e640`: 4 backend failures (all
+manifest fields only (the rule is `why_mask` in `specs/t27mcp/spec_brief.t27`). As of corpus `93228e640`: 4 backend failures (all
 `verilog_hir`) and 2 specs that never parsed.
 
 **The manifest is the rich source; the atlas is the poor one.** The atlas knows

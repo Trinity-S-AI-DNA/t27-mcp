@@ -52,11 +52,9 @@ const run = async () => {
   check('spec count agrees with the health split', st.specCount === Object.values(st.health).reduce((a, b) => a + b, 0), `${st.specCount} = ${JSON.stringify(st.health)}`);
   check('every failing spec names a cause', st.failingSpecs.every((s) => s.whyFailing?.length), `${st.failingSpecs.length} failing`);
 
-  // The counted backend failures and the specs blaming a backend must agree;
-  // the remainder is exactly the specs that never parsed.
-  const counted = Object.values(st.backendFailures || {}).reduce((a, b) => a + b, 0);
-  const blaming = st.failingSpecs.filter((s) => s.failedBackends?.length).length;
-  check('backendFailures tally matches the specs blaming a backend', counted === blaming, `${counted} counted vs ${blaming} blaming`);
+  // backendFailures is a per-backend count, so each backend's count must equal the specs blaming that backend.
+  const perBackend = await Promise.all(Object.entries(st.backendFailures || {}).map(async ([b, n]) => [b, n, (await call('t27_specs', { failedBackend: b, limit: 1 })).matched]));
+  check('backendFailures per backend matches the specs blaming it', perBackend.length > 0 && perBackend.every(([, n, m]) => n === m), perBackend.map(([b, n, m]) => `${b} ${n}/${m}`).join(' '));
 
   const fails = await call('t27_specs', { health: 'fail' });
   check('t27_specs finds the same failures as t27_status', fails.matched === st.failingSpecs.length, `${fails.matched} vs ${st.failingSpecs.length}`);
@@ -70,6 +68,12 @@ const run = async () => {
   // describe the same file: the byte count must match, not merely both exist.
   const demo = await call('t27_spec', { path: 'specs/demos/hello_world.t27', source: true });
   check('published source byte count matches the manifest', demo.source.length === demo.bytes, `${demo.source.length} fetched vs ${demo.bytes} recorded`);
+
+  // brief mode: the short record is smaller, keeps the verdict, and fields:true still returns the whole record
+  const [short, full] = await Promise.all([false, true].map((fields) => call('t27_spec', { path: 'specs/demos/hello_world.t27', fields })));
+  check('t27_spec is brief by default', JSON.stringify(short).length < JSON.stringify(full).length && short.health === full.health && full.kinds !== undefined && short.kinds === undefined, `${JSON.stringify(short).length} brief vs ${JSON.stringify(full).length} full bytes`);
+  const bad = (await call('t27_specs', { health: 'fail', limit: 200 })).specs;
+  check('every failing row carries a reason from the spec', bad.length > 0 && bad.every((r) => r.whyFailing?.length && !r.whyFailing.some((w) => w.includes('{}'))), `${bad.length} failing rows`);
 
   const g = await call('t27_grep', { pattern: 'invariant', category: 'specs/numeric', maxSpecs: 8, maxHitsPerSpec: 2 });
   check('grep reads inside spec sources', g.totalHits > 0 && g.opened <= 8, `${g.totalHits} hits in ${g.specsWithHits}/${g.opened} opened`);
