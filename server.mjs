@@ -659,14 +659,14 @@ const tools = [
       if (!(preset >= 0 && preset < reel.PRESET_COUNT)) throw new Error(`preset must be 0..${reel.PRESET_COUNT - 1}`);
       if (!status.every((v) => Number.isInteger(v) && v >= 0 && v < 256)) throw new Error('status codes are integers 0..255');
       if (look !== deck.LOOK_MAP && look !== deck.LOOK_DECK) throw new Error(`look must be ${deck.LOOK_MAP} (map) or ${deck.LOOK_DECK} (deck)`);
-      const W = reel.PRESET_W[preset], H = reel.PRESET_H[preset], r = R.demo_r(f, preset), focus = reel.DEMO_CELL[s];
+      const W = reel.PRESET_W[preset], H = reel.PRESET_H[preset], r = R.demo_r(f, preset), focus = reel.DEMO_CELL[s], bg = `#${deck.BACKDROP.toString(16).padStart(6, '0')}`;
       const name = reel.SCENE_NAMES.split(',')[reel.DEMO_KIND[s]], n = R.demo_frames(), cap = `T27F demo reel - scene ${s} (${name}) - frame ${f} of ${n}`;
-      const svg = [`<rect width="${W}" height="${H}" fill="#0b0d12"/>`];
+      const svg = [`<rect width="${W}" height="${H}" fill="${bg}"/>`];
       if (look === deck.LOOK_DECK) svg.splice(0, 1, slide(R, { f, s, still: frame === undefined, preset, status, labels, kicker: cap, title: title ?? name, subtitle, rows }));
       else for (let k = 0; R.valid_cell(k); k++) {
         const st = R.cell_style(status[k] ?? 0), on = k === focus;
         const pts = [0, 1, 2, 3, 4, 5].map((i) => `${R.demo_corner_sx(f, preset, k, i)},${R.demo_corner_sy(f, preset, k, i)}`);
-        svg.push(`<polygon points="${pts.join(' ')}" fill="${PAINT[st]}" stroke="${on ? '#fff' : st === reel.STYLE_GAP ? '#5ad1ff' : '#0b0d12'}" stroke-width="${on ? 4 : 2}"/>`,
+        svg.push(`<polygon points="${pts.join(' ')}" fill="${PAINT[st]}" stroke="${on ? '#fff' : st === reel.STYLE_GAP ? '#5ad1ff' : bg}" stroke-width="${on ? 4 : 2}"/>`,
           `<text x="${R.demo_sx(f, preset, R.cell_x(k))}" y="${R.demo_sy(f, preset, R.cell_y(k))}" font-size="${Math.max(10, r / 3)}" fill="#e6e8ee" text-anchor="middle" dominant-baseline="middle">${esc(labels[k] ?? k)}</text>`);
       }
       const ch = Object.keys(reel).find((c) => c.startsWith('CHANNEL_') && reel[c] === R.channel_for(host)) || 'none';
