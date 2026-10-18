@@ -123,6 +123,12 @@ const run = async () => {
   check('t27_examples keeps async apart from sync', ex2.topic === 'reset_async' && (await call('t27_examples', { topic: 'sync reset' })).topic === 'reset_sync');
   const ex3 = await call('t27_examples', { topic: 'axi4 burst' });
 
+  // t27_spec seal receipt: the verdict is specs/t27mcp/seal_verdict.t27; clocked_counter is sealed with its own tests.
+  const cc = (await call('t27_spec', { path: 'specs/ternary/clocked_counter.t27' })).seal;
+  check('t27_spec returns a fresh, verified seal receipt for clocked_counter', cc?.verdict === 'verified' && cc.fresh === true && cc.tests.passed === cc.tests.total && cc.sealed_at && cc.seal_schema && cc.built_by, cc && `${cc.verdict} ${cc.tests?.passed}/${cc.tests?.total}`);
+  const hw = (await call('t27_spec', { path: 'specs/demos/hello_world.t27' })).seal;
+  check('every t27 spec carries a receipt with a verdict word', ['verified', 'stale', 'unsealed', 'unknown', 'vacuous', 'failing', 'forced'].includes(hw?.verdict) && typeof hw.fresh === 'boolean', hw?.verdict);
+
   // t27_find: ranking is specs/t27mcp/find.t27; a below-threshold intent is an honest miss.
   const fd = await call('t27_find', { intent: 'clocked counter' });
   check('t27_find returns the clocked counter spec', fd.hits?.some((h) => h.path === 'specs/ternary/clocked_counter.t27') && fd.hits.every((h) => h.next), fd.hits?.length);
