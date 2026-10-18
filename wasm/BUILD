@@ -281,3 +281,31 @@ sha256
   f271acdb3ece4eddef3dae5251350780f3ce4e470f57a919775e742a78906eef  dashboard.t27 (source)
   450af040b0c32dbd596498089cfd50ff75e8eb613efe63a440070fbf58c10798  dashboard.wasm
   5db0db9569d38a704674f0950fd66e7b63c5029fb900b555f1c86cb741e9944e  dashboard_table.mjs
+
+tg_whoami, tg_dialogs, tg_unread, tg_messages, tg_search (epic gHashTag/t27#10066)
+  telegram.wasm         generated from specs/t27mcp/telegram.t27 (module T27mcpTelegram) by the C
+                        route: limit_for, chat_ok, query_ok, outcome
+  telegram_table.mjs    generated: t27c gen-js specs/t27mcp/telegram.t27 (tool names, tg commands,
+                        argument kinds, descriptions, outcome texts, FOREIGN_TEXT, SEND_TEXT)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/telegram.t27 > telegram.c
+  t27c gen-js specs/t27mcp/telegram.t27 > telegram_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=limit_for -Wl,--export=chat_ok -Wl,--export=query_ok \
+      -Wl,--export=outcome -o telegram.wasm telegram.c
+
+../telegram.mjs spawns the owner's tg CLI (gHashTag/agent-telegram, read only by construction, session
+in the macOS Keychain) with the argument list the wasm accepted, and maps its run to an outcome the
+wasm names. t27c 0.5.2, zig 0.16.0, gHashTag/t27 3c89b007c (telegram.t27 not on master at build time).
+telegram.t27: 8 of 8 tests pass, 0 vacuous. Negative controls, each caught (1 failing test each): no
+limit cap; a 21-digit id accepted; a 4-character username accepted; a stray character ignored; a
+leading minus not allowed for; a missing session checked only on a non-zero exit; an empty query
+accepted. A first run also showed `if (minus) return false` in chat_ok was dead code (its mutant
+survived: a minus is not a word character), so it was removed.
+
+sha256
+  518e684264cc664dcf0460b9bcf2cd34147e7aff74705c58b192f5870f59841e  telegram.t27 (source)
+  c6875f2c2478bbb14794b01ae375b8e8cc637f5f3f380035e9e77d7a4d2da534  telegram.wasm
+  c7dc7bdc4cd595f5fae1abea6d0b1b8ce4178e302c5e06a6074ad48dd20c65c6  telegram_table.mjs
