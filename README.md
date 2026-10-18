@@ -68,6 +68,35 @@ the number 6 sat in `t27_status` with nothing behind it.
 | `T27_TTL_MS` | `300000` | Cache lifetime |
 | `T27_HEALTH_PORT` | unset | Optional health endpoint shared with `habr-mcp`; imported dynamically, so its absence is not fatal |
 
+## Hot reload (`--watch`)
+
+A saved `.t27` file is re-exported on its own and a browser is told, without a publish to t27.ai and without a
+rebuild of the wasm. The rules (the cache key, when a result is reused, how a burst of saves is batched, what a
+record holds) are `specs/t27f/hot.t27` in gHashTag/t27, run as `wasm/hot.wasm` with its constants in
+`wasm/hot.mjs` (see `wasm/BUILD`); the JavaScript hashes bytes, keeps results and writes the stream.
+
+    node server.mjs --watch ~/t27/specs --port 2727
+
+`<specs-dir>` is a checkout's `specs/` directory; `specs/a/b.t27` there is the corpus path `specs/a/b.t27`. The
+server replaces the stdio loop, binds 127.0.0.1 only, watches with `fs.watch` (events, no polling; recursive
+watching needs node 20 or newer on Linux) and answers a `Host` that is not `localhost` / `127.0.0.1` with 403.
+CORS is granted to `https://t27.ai` and to `http://localhost[:port]` / `http://127.0.0.1[:port]` only.
+
+- `GET /events`: server-sent events. Event name `t27f`, `data:` one JSON object whose keys are, in order,
+  `path` (corpus path), `digest` (sha256 of the spec bytes, hex), `nodes`, `edges`, `verdict` (the exporter's
+  number, `0` is `GRAPH_OK`), `cache` (`miss` or `hit`), `export_ms`, `decision` (`reuse`, `rebuild_spec`,
+  `rebuild_exporter` or `missing`). One event per exported file; a save that changes no byte is `reuse` and
+  sends nothing. A client that connects is first sent the current state, one event per file exported so far,
+  with `cache: hit`. A `: ping` comment arrives every 15 s; `retry: 1000` is set.
+- `GET /graph?path=specs/a/b.t27`: JSON `{ record, verdict, node_count, edge_count, view: {width, height},
+  nodes: [{i, kind, name, label, line_start, line_end, x, y, w, h, fill, stroke, dash}], edges: [{kind, label,
+  from, to, line, x1, y1, x2, y2, stroke, dash}] }`, laid out by `specs/t27f/spec_graph_view.t27`. A spec the
+  exporter or the view refuses is HTTP 422 with `refusal`; a path outside `specs/` is 400; a missing file 404.
+
+The MCP tools use the same key without `--watch`: `t27f_outline` and `t27f_graph {path}` keep their result for as
+long as the spec bytes and `wasm/t27f.wasm` are unchanged, and run the exporter again the moment either changes.
+There is no timer on that cache. `fresh` still bypasses the 5-minute cache of the *fetch*.
+
 ## Testing
 
     npm run smoke

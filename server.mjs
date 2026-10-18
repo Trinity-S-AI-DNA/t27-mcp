@@ -698,10 +698,12 @@ const tools = [
       "Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, name, inference label and source lines. With path, the graph is the exact-only export of that corpus spec (specs/t27f/spec_graph_export.t27: no derived edges; at most 192 nodes and 254 edges, a larger spec is refused, never truncated). With fixture, the hand-read tutorial 08 graph: 0 as is, 1 with a suggestion. path wins when both are given.",
     inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Exact corpus path, e.g. specs/tutorial/08_modules_and_arrays.t27' }, fixture: { type: 'integer', description: '0 tutorial 08 (default), 1 with a suggestion' }, out: { type: 'string', description: 'Output file (default: the temp directory)' }, fresh: { type: 'boolean' } } },
     handler: async ({ path, fixture = 0, out, fresh }) => {
+      const src = path !== undefined ? await specSource(specPath(path), fresh) : undefined;
+      const build = () => {
       // q reads the same quantities from the exported graph (gx_*) or from a fixture (fx_*).
       let q, tag;
       if (path !== undefined) {
-        const p = specPath(path), v = GX.load(R, p, await specSource(p, fresh));
+        const p = specPath(path), v = GX.load(R, p, src);
         if (v !== G.GRAPH_OK) throw new Error(GX.refusal(R, p, v));
         const g = { width: 'view_width', height: 'view_height', verdict: 'view_verdict', node_x: 'view_node_x', node_y: 'view_node_y', node_w: 'view_node_w', node_h: 'view_node_h', node_fill: 'view_node_fill', node_stroke: 'view_node_stroke', node_dash: 'view_node_dash', edge_x1: 'view_edge_x1', edge_y1: 'view_edge_y1', edge_x2: 'view_edge_x2', edge_y2: 'view_edge_y2', edge_stroke: 'view_edge_stroke', edge_dash: 'view_edge_dash', node_line_start: 'line_start', node_line_end: 'line_end' };
         q = (k, ...a) => R[`gx_${g[k] ?? k}`](...a);
@@ -726,9 +728,13 @@ const tools = [
         svg.push(`<rect x="${x}" y="${y}" width="${w}" height="${q('node_h', i)}" rx="6" fill="${hex(q('node_fill', i))}" stroke="${hex(q('node_stroke', i))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}/>`,
           `<text x="${x + 8}" y="${y + G.VIEW_FONT_PX + 6}" font-size="${G.VIEW_FONT_PX}" fill="${hex(G.VIEW_TEXT)}"><title>${esc(full)}</title>${esc(full.length > fit ? `${full.slice(0, fit - 1)}...` : full)}</text>`);
       }
+      return { doc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif">${svg.join('')}</svg>\n`, note: `T27F graph view, ${tag}: ${q('node_count')} nodes, ${q('edge_count')} edges, ${W}x${H}${path !== undefined ? ', exact only' : ''}.` };
+      };
+      // A path graph is kept while the hot.t27 key (spec bytes, exporter wasm) holds; a fixture is rebuilt.
+      const { doc, note } = path !== undefined ? GX.memo(specPath(path), src, 'svg', build) : build();
       const file = out || join(tmpdir(), path !== undefined ? `t27f-graph-${path.replace(/[^A-Za-z0-9]+/g, '_')}.svg` : `t27f-graph-fx${fixture}.svg`);
-      writeFileSync(file, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif">${svg.join('')}</svg>\n`);
-      return `${file}\nT27F graph view, ${tag}: ${q('node_count')} nodes, ${q('edge_count')} edges, ${W}x${H}${path !== undefined ? ', exact only' : ''}.`;
+      writeFileSync(file, doc);
+      return `${file}\n${note}`;
     },
   },
 ];
@@ -767,7 +773,12 @@ if (process.env.T27_HEALTH_PORT) {
     .catch((e) => process.stderr.write(`t27-mcp: health port requested but unavailable: ${e.message}\n`));
 }
 
-createInterface({ input: process.stdin }).on('line', async (line) => {
+// `--watch <specs-dir> [--port N]` replaces the stdio loop with the local hot-reload server (graph.mjs, README).
+const wi = process.argv.indexOf('--watch'), pi = process.argv.indexOf('--port');
+if (wi !== -1) {
+  if (!process.argv[wi + 1]) throw new Error('--watch needs the specs directory of a checkout');
+  GX.watch(R, process.argv[wi + 1], pi !== -1 ? Number(process.argv[pi + 1]) : 2727, specPath);
+} else createInterface({ input: process.stdin }).on('line', async (line) => {
   if (!line.trim()) return;
   let req;
   try {
