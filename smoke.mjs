@@ -122,6 +122,12 @@ const run = async () => {
   const ex2 = await call('t27_examples', { topic: 'async reset' });
   check('t27_examples keeps async apart from sync', ex2.topic === 'reset_async' && (await call('t27_examples', { topic: 'sync reset' })).topic === 'reset_sync');
   const ex3 = await call('t27_examples', { topic: 'axi4 burst' });
+
+  // t27_find: ranking is specs/t27mcp/find.t27; a below-threshold intent is an honest miss.
+  const fd = await call('t27_find', { intent: 'clocked counter' });
+  check('t27_find returns the clocked counter spec', fd.hits?.some((h) => h.path === 'specs/ternary/clocked_counter.t27') && fd.hits.every((h) => h.next), fd.hits?.length);
+  const fd2 = await call('t27_find', { intent: 'clocked counter with sync reset' });
+  check('t27_find reports a miss rather than a weak match', fd2.miss === true && fd2.hits.length === 0);
   check('t27_examples invents no example for an unknown topic', ex3.examples === undefined && ex3.topics.includes('comb'));
 
   child.kill();

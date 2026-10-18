@@ -23,6 +23,7 @@ import { check } from './check.mjs';
 import { examples } from './examples.mjs';
 import { brief, one, failureReasons } from './brief.mjs';
 import * as GX from './graph.mjs';
+import { find } from './find.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -640,6 +641,13 @@ const tools = [
       'Short, compiler-checked worked examples of .t27 idioms, cut from the published corpus at a pinned commit (at most 40 lines each). topic: clocked, comb, fn, test, or reset (async, sync, none). Use it before writing a clocked or combinational module, a test block or a reset; an unknown topic returns the list of topics.',
     inputSchema: { type: 'object', properties: { topic: { type: 'string', description: 'e.g. "clocked counter", "comb", "fn", "test", "async reset", "no reset"' }, fresh: { type: 'boolean' } }, required: ['topic'] },
     handler: ({ topic, fresh }) => examples(String(topic ?? ''), (pin, path) => getText(`${RAW}/${pin}/${path}`, fresh)),
+  },
+  {
+    name: 't27_find',
+    description:
+      'Find the existing, compiled-clean spec with tests that answers an intent, e.g. "clocked counter", "uart echo", "fifo". Ranks the corpus by the words of the intent in each spec name and path (rules in specs/t27mcp/find.t27) and returns nothing when no spec covers them well enough: a miss means write a new .t27 spec with tests (the reply says how). Specs that cover the intent but fail to compile or carry no tests are counted under skipped, not served. Call it before t27_specs or t27_grep when you know what you need, not where it is.',
+    inputSchema: { type: 'object', properties: { intent: { type: 'string', description: 'What the module does, e.g. "clocked counter with enable"' }, limit: { type: 'number', description: 'Default 5, at most 20' }, fresh: { type: 'boolean' } }, required: ['intent'] },
+    handler: async ({ intent, limit, fresh }) => find((await manifest(fresh)).specs || [], intent, limit),
   },
   {
     name: 't27f_view',
