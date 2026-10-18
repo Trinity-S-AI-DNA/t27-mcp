@@ -31,9 +31,5 @@ async function call(i, a) {
   return S.FOREIGN_TEXT + out + (i === S.TOOL_UNANSWERED ? S.SEND_TEXT : '');
 }
 
-const prop = { [S.A_CHAT]: ['chat', S.CHAT_DESC], [S.A_QUERY]: ['query', S.QUERY_DESC] };
-export const tgTools = S.TG_TOOLS.map((name, i) => {
-  const p = prop[S.TG_ARG[i]], properties = S.TG_LIMITED[i] ? { limit: { type: 'number', description: S.LIMIT_DESC } } : {};
-  if (p) properties[p[0]] = { type: 'string', description: p[1] };
-  return { name, description: S.TG_DESC[i], inputSchema: { type: 'object', properties, required: p ? [p[0]] : [] }, handler: (a) => call(i, a || {}) };
-});
+// The input schema of each tg_* tool is its rows in specs/t27mcp/tool_schema.t27 (schema.mjs adds it).
+export const tgTools = S.TG_TOOLS.map((name, i) => ({ name, description: S.TG_DESC[i], handler: (a) => call(i, a || {}) }));

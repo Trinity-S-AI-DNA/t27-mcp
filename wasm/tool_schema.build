@@ -1,0 +1,4 @@
+# spec specs/t27mcp/tool_schema.t27 sha256:6997ad63a28002811cd1d1d2bd0d42c734aebe954fd428d1b580322606cb2f81
+# t27c 0.5.2 (t27c-bootstrap@0.5.2+4ab200073)
+1e4efbe49892b4e1b705763d282fb78e7d662f2360a3c2b2d7b62b662b23a3e7  tool_schema_table.mjs
+97e370197d0adbbd528b8e7c18acea6b90ffe0b1d4f6581070afb80d816cda04  tool_schema.seal.json
