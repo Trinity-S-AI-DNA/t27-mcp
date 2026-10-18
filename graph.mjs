@@ -1,12 +1,17 @@
-// Host side of t27f_outline and t27f_graph {path}. The exporter and the layout run in wasm/t27f.wasm
-// (specs/t27f/spec_graph_export.t27 and spec_graph_view.t27, see wasm/BUILD); this file only moves the
-// spec's bytes in, reads the graph out through the gx_* getters and prints it. It decides no node,
-// edge, span or verdict. The one derivation it makes is the "is tested by" view, an inversion of the
-// exact calls edges that go from a test to a fn, and it says so in the output.
+// Host I/O of t27f_outline and t27f_graph {path}. The exporter, the layout and every decision about the
+// outline run in wasm/t27f.wasm: specs/t27f/spec_graph_export.t27 (nodes and edges),
+// spec_graph_view.t27 (layout) and spec_graph_outline.t27 (the wording, which facts print, how a span
+// prints, which refusal text a verdict takes, the tests of a fn). See wasm/BUILD. This file moves bytes in,
+// reads values out through the gx_* exports and fills the `{}` marks of the spec's templates, left to
+// right. It chooses no template, filters no fact and computes no span.
 import * as G from './wasm/spec_graph_view.mjs';
+import * as O from './wasm/spec_graph_outline.mjs';
 
 // Name of constant `v` among the G constants that start with `prefix` (NODE_FN -> 'fn').
 const nm = (prefix, v) => Object.keys(G).find((c) => c.startsWith(prefix) && !c.endsWith('KINDS') && G[c] === v)?.slice(prefix.length).toLowerCase() ?? String(v);
+
+// Fill the `{}` marks of a spec template with `vals`, in order.
+const fill = (tpl, ...vals) => { let i = 0; return tpl.replace(/\{\}/g, () => String(vals[i++])); };
 
 // Write the spec into the wasm input buffer and run the exporter; returns the exporter's verdict.
 export function load(R, path, src) {
@@ -21,30 +26,32 @@ export function load(R, path, src) {
 
 export const nodeName = (R, i) => Buffer.from(R.memory.buffer, R.gx_node_name_ptr(i), R.gx_node_name_len(i)).toString('utf8');
 
-// Why the graph was refused, in the words of the verdict (never a truncated graph).
+// The text of a refused graph: the spec picks the template, the host fills in the numbers.
 export function refusal(R, path, v) {
-  const why = nm('ERR_', v).replace(/_/g, ' ');
-  if (v === G.ERR_TOO_MANY_NODES) return `${path}: refused, ${why}: ${R.gx_node_count()} nodes found, the graph holds at most ${G.MAX_NODES}. No graph is drawn or truncated.`;
-  if (v === G.ERR_TOO_MANY_EDGES) return `${path}: refused, ${why}: ${R.gx_edge_count()} edges found, the graph holds at most ${G.MAX_EDGES}. No graph is drawn or truncated.`;
-  return `${path}: refused, ${why} (verdict ${v}).`;
+  const t = O.REFUSAL_TEXT[R.refusal_index(v)];
+  if (v === G.ERR_TOO_MANY_NODES) return fill(t, path, R.gx_node_count(), G.MAX_NODES);
+  if (v === G.ERR_TOO_MANY_EDGES) return fill(t, path, R.gx_edge_count(), G.MAX_EDGES);
+  return fill(t, path, nm('ERR_', v).replace(/_/g, ' '), v);
 }
 
 export function outline(R, path, src) {
   const v = load(R, path, src);
   if (v !== G.GRAPH_OK) return refusal(R, path, v);
-  const n = R.gx_node_count(), m = R.gx_edge_count(), lines = [];
-  const span = (i) => { const a = R.gx_line_start(i), b = R.gx_line_end(i); return `${a}${b > a ? `-${b}` : ''}`; };
-  const ref = (i) => `${nm('NODE_', R.gx_node_kind(i))} ${nodeName(R, i)}`;
-  lines.push(`${path}: ${R.gx_line_count()} lines, ${n} nodes, ${m} edges (cap ${G.MAX_NODES} nodes / ${G.MAX_EDGES} edges); exact only, no derived edges`, 'nodes (kind name lines a-b label):');
-  for (let i = 0; i < n; i++) lines.push(`  ${i} ${ref(i)} lines ${span(i)} ${nm('LABEL_', R.gx_node_label(i))}`);
-  lines.push('edges (kind from -> to, line of first use):');
-  const tests = new Map();
+  const T = O.OUTLINE_TEXT, n = R.gx_node_count(), m = R.gx_edge_count(), out = [];
+  const span = (i) => { const a = R.gx_line_start(i), b = R.gx_line_end(i); return R.span_is_range(a, b) ? `${a}-${b}` : String(a); };
+  out.push(fill(T[0], path, R.gx_line_count(), n, m, G.MAX_NODES, G.MAX_EDGES), T[1]);
+  for (let i = 0; i < n; i++) if (R.shows_in_outline(R.gx_node_label(i))) out.push(fill(T[4], i, nm('NODE_', R.gx_node_kind(i)), nodeName(R, i), span(i), nm('LABEL_', R.gx_node_label(i))));
+  out.push(T[2]);
   for (let j = 0; j < m; j++) {
-    const k = R.gx_edge_kind(j), f = R.gx_edge_from(j), t = R.gx_edge_to(j);
-    lines.push(`  ${nm('EDGE_', k)} ${f} ${nodeName(R, f)} -> ${t} ${nodeName(R, t)} line ${R.gx_edge_line(j)}`);
-    if (k === G.EDGE_CALLS && R.gx_node_kind(f) === G.NODE_TEST && R.gx_node_kind(t) === G.NODE_FN) tests.set(t, [...(tests.get(t) ?? []), nodeName(R, f)]);
+    const f = R.gx_edge_from(j), t = R.gx_edge_to(j);
+    if (R.shows_in_outline(R.gx_edge_label(j))) out.push(fill(T[5], nm('EDGE_', R.gx_edge_kind(j)), f, nodeName(R, f), t, nodeName(R, t), R.gx_edge_line(j)));
   }
-  lines.push('derived (the tested_by view of the exact calls edges from a test to a fn):');
-  for (let i = 0; i < n; i++) if (R.gx_node_kind(i) === G.NODE_FN) lines.push(`  fn ${nodeName(R, i)} ${tests.has(i) ? `is tested by: ${tests.get(i).join('; ')}` : 'is called by no test'}`);
-  return lines.join('\n');
+  out.push(T[3]);
+  for (let i = 0; i < n; i++) {
+    if (R.gx_node_kind(i) !== G.NODE_FN) continue;
+    const names = [];
+    for (let k = 0; k < R.gx_o_tested_by_count(i); k++) names.push(nodeName(R, R.gx_o_tested_by_of(i, k)));
+    out.push(names.length ? fill(T[6], nodeName(R, i), names.join('; ')) : fill(T[7], nodeName(R, i)));
+  }
+  return out.join('\n');
 }

@@ -17,17 +17,25 @@ directory is a second home for that math:
               generated: t27c gen / gen-js specs/t27f/spec_graph_view.t27
   spec_graph_export.zig, spec_graph_export.mjs
               generated: t27c gen / gen-js specs/t27f/spec_graph_export.t27
-  export.zig  hand glue, 126 lines. The first 46 lines export every scalar pub fn of
-              reel.zig, deck.zig and spec_graph_view.zig (up to five parameters) under its
+  spec_graph_outline.zig, spec_graph_outline.mjs
+              generated: t27c gen / gen-js specs/t27f/spec_graph_outline.t27
+  export.zig  hand glue, 138 lines. The first 46 lines export every scalar pub fn of
+              reel.zig, deck.zig, spec_graph_view.zig and spec_graph_outline.zig (up to five
+              parameters) under its
               own name with the C calling convention. deck.zig inlines what it imports from
               reel (half_height), so a name an earlier module already has is
-              exported once, from the first. The comptime walk over three
+              exported once, from the first. The comptime walk over four
               modules needs a raised eval branch quota. It names no spec function and holds
-              no number. The other 80 lines are the exporter glue, described below.
+              no number. The other 92 lines are the exporter glue, described below.
   t27f.wasm   built from export.zig + reel.zig + deck.zig + spec_graph_view.zig
-              + spec_graph_export.zig
-  ../graph.mjs  hand host glue, 50 lines: writes the source bytes into wasm memory, reads
-              the graph back through the gx_ getters and prints it as text.
+              + spec_graph_export.zig + spec_graph_outline.zig
+  ../graph.mjs  hand host I/O, 57 lines: writes the source bytes into wasm memory, reads
+              values back through the gx_ exports and fills the `{}` marks of the
+              templates in spec_graph_outline.mjs (OUTLINE_TEXT, REFUSAL_TEXT), left to
+              right. Which template, which facts print, how a span prints and which tests
+              call a fn are answers of t27 functions (refusal_index, shows_in_outline,
+              span_is_range, gx_o_tested_by_count / gx_o_tested_by_of); the host loops over
+              nodes and edges and chooses nothing.
 
 The bodies run as t27f.wasm, because gen-js emits constants only. reel.mjs and
 deck.mjs supply the constants (presets, regions, type sizes, palette, scene
@@ -44,6 +52,8 @@ Rebuild (on the Railway lab, never on the owner's Mac), from specs/t27f/:
   t27c gen-js spec_graph_view.t27 > spec_graph_view.mjs
   t27c gen    spec_graph_export.t27 > spec_graph_export.zig
   t27c gen-js spec_graph_export.t27 > spec_graph_export.mjs
+  t27c gen    spec_graph_outline.t27 > spec_graph_outline.zig
+  t27c gen-js spec_graph_outline.t27 > spec_graph_outline.mjs
   zig build-exe export.zig -target wasm32-freestanding -fno-entry -rdynamic \
       -O ReleaseSmall -femit-bin=t27f.wasm
 
@@ -69,25 +79,33 @@ SpecGraph and validate_graph returns the verdict. It emits only EXACT nodes (mod
 fn, test, invariant, bench, use) and EXACT edges (calls, uses, constrains), never derived,
 suggested or unknown ones.
 
-spec_graph_export.zig and spec_graph_view.zig each carry their own SpecGraph type, because
-t27c gen inlines the items a module uses. The glue copies the graph from one to the other
-field by field with `inline for`.
+The outline wording and decisions come from specs/t27f/spec_graph_outline.t27 (gHashTag/t27#10200,
+PR #10202): OUTLINE_TEXT and REFUSAL_TEXT (templates with `{}` marks, the order of the marks is in
+the spec's comments), shows_in_outline, span_is_range, refusal_index, and the tested_by view of
+exact calls edges (tested_by_count, tested_by_of). t27c check 0 errors; t27c test-report 8 of 8
+pass, 0 vacuous, on the Railway lab. The source was generated from the branch t27f/outline-spec of
+gHashTag/t27 (head d1d8d74fa, on master 2d358a708). The outline spec carries its own small copy
+of the tested_by rule until the derive spec (gHashTag/t27#10198) lands.
 
-Glue in export.zig (the 80 added lines; no spec logic):
+spec_graph_export.zig, spec_graph_view.zig and spec_graph_outline.zig each carry their own
+SpecGraph type, because t27c gen inlines the items a module uses. The glue copies the graph from
+the exporter's type into the other two field by field with `inline for`.
+
+Glue in export.zig (the 92 added lines; no spec logic):
   - an input buffer: gx_src_ptr and gx_src_cap (2 MiB; the biggest spec in specs/ is
     1,364,985 bytes) and gx_path_ptr (512 bytes), with the setters gx_set_len and
     gx_set_path_len. The host writes the UTF-8 bytes there.
   - gx_load(): runs export_graph on the buffers, copies the graph, returns the verdict.
   - scalar getters, one per SpecGraph field (gx_<field>; an out-of-range index reads 0),
-    and a gx_view_<fn> wrapper for each scalar view_* fn of spec_graph_view.zig, bound to
-    the loaded graph.
+    a gx_view_<fn> wrapper for each scalar view_* fn of spec_graph_view.zig and a gx_o_<fn>
+    wrapper for each scalar fn of spec_graph_outline.zig that takes a graph, each bound to the
+    loaded graph.
   - how names (strings) come back: gx_node_name_ptr(i) and gx_node_name_len(i) return a
     pointer and a length into the source buffer. The host decodes those bytes from wasm
     memory; a name is a slice of the source, never a copy.
-Host side, graph.mjs: the wording of a refusal, the text layout of an outline, and one
-derivation, the "is tested by" section, which inverts the exporter's exact calls edges
-(test -> fn). The output labels it derived. Moving it into t27 needs a change in
-gHashTag/t27.
+Host side, ../graph.mjs: byte input and output only, see the list above. It still loops over
+nodes and edges and names a node kind, edge kind, label or verdict from the generated constants
+of spec_graph_view.mjs (those name tables are not emitted by gen-js).
 
 sha256
   a3dbe0ec5110c48183ebea101109598e8542bb0ffdf9e061c672162d7da03fe7  spec_graph.t27 (source)
@@ -103,8 +121,11 @@ sha256
   22579bc98aecb3c4405991eef8b5060eb4151b17b200dfbae07a75d8b1e8547a  spec_graph_view.t27 (source)
   191d55d9bb54d57017943a1903790e4661dfd237dfe507804cef3fcdfab33c19  spec_graph_view.zig
   739118fa01cf501bdb3eab925ef9404873230a82907faf5e6e44c006e206c962  spec_graph_view.mjs
-  fff4161f0f616ca9efeafa215e23b0d9c2f9f761706d47c8350c1dd824dadd31  export.zig
-  eaa97ac361cb2b7ebadacf0c7a33f6daaabf7b547df1f00353900dfd3e7c44e1  t27f.wasm
+  a5ff9792202408ac5bc68f9a479a38671c5eebd970886ab48ee65508feeeab2f  export.zig
+  92e0bf52018e6eabebec1705d04a15450a2ebd8abe1b737891a9ad3c0991a1c7  spec_graph_outline.t27 (source)
+  581f9c9af4f5b489c8a7e275e757fae648b84ef6d00c5b333fd417a8e97cb0e8  spec_graph_outline.zig
+  a8102abac8b3096b109c9337ad69ad61149efc36870f74bdd4d3a0a1205a21ff  spec_graph_outline.mjs
+  deedd9c104392469348df452c72d1f4e4f1a68930ba8acb130110bf92c65cd56  t27f.wasm
 
 t27_check (gHashTag/t27#10073, epic #10066)
 

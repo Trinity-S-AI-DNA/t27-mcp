@@ -1,7 +1,7 @@
 // Hand glue: export every pub fn of the t27c-generated Zig modules whose parameters and result are
 // integers or bools, under its own name, so a wasm host can call the spec's bodies. It knows no
 // spec: it decides nothing and computes nothing. Build: see wasm/BUILD in gHashTag/t27-mcp.
-const mods = .{ @import("reel.zig"), @import("deck.zig"), @import("spec_graph_view.zig") };
+const mods = .{ @import("reel.zig"), @import("deck.zig"), @import("spec_graph_view.zig"), @import("spec_graph_outline.zig") };
 
 fn seen(comptime i: usize, comptime name: []const u8) bool {
     inline for (mods, 0..) |m, k| if (k < i and @hasDecl(m, name)) return true;
@@ -54,6 +54,7 @@ comptime {
 // buffer, so gx_node_name_ptr/len return the exporter's own slice.
 const X = @import("spec_graph_export.zig");
 const V = @import("spec_graph_view.zig");
+const O = @import("spec_graph_outline.zig");
 
 var src_buf: [2 << 20]u8 = undefined;
 var path_buf: [512]u8 = undefined;
@@ -61,6 +62,7 @@ var src_len: usize = 0;
 var path_len: usize = 0;
 var eg: X.SpecGraph = undefined;
 var vg: V.SpecGraph = undefined;
+var og: O.SpecGraph = undefined;
 
 export fn gx_src_ptr() usize { return @intFromPtr(&src_buf); }
 export fn gx_src_cap() u32 { return src_buf.len; }
@@ -70,6 +72,7 @@ export fn gx_set_path_len(n: u32) bool { if (n > path_buf.len) return false; pat
 export fn gx_load() u8 {
     eg = X.export_graph(path_buf[0..path_len], src_buf[0..src_len]);
     inline for (@typeInfo(V.SpecGraph).@"struct".fields) |f| @field(vg, f.name) = @field(eg, f.name);
+    inline for (@typeInfo(O.SpecGraph).@"struct".fields) |f| @field(og, f.name) = @field(eg, f.name);
     return X.validate_graph(eg);
 }
 
@@ -86,15 +89,15 @@ fn Field(comptime name: []const u8) type {
     };
 }
 
-fn Layout(comptime f: anytype) type {
+fn Layout(comptime f: anytype, comptime outline: bool) type {
     const I = @typeInfo(@TypeOf(f)).@"fn";
     const P = I.params;
     const R = I.return_type.?;
     return switch (P.len) {
-        1 => struct { fn c() callconv(.c) R { return f(vg); } },
-        2 => struct { fn c(a: P[1].type.?) callconv(.c) R { return f(vg, a); } },
-        3 => struct { fn c(a: P[1].type.?, b: P[2].type.?) callconv(.c) R { return f(vg, a, b); } },
-        4 => struct { fn c(a: P[1].type.?, b: P[2].type.?, d: P[3].type.?) callconv(.c) R { return f(vg, a, b, d); } },
+        1 => struct { fn c() callconv(.c) R { return f(if (outline) og else vg); } },
+        2 => struct { fn c(a: P[1].type.?) callconv(.c) R { return f(if (outline) og else vg, a); } },
+        3 => struct { fn c(a: P[1].type.?, b: P[2].type.?) callconv(.c) R { return f(if (outline) og else vg, a, b); } },
+        4 => struct { fn c(a: P[1].type.?, b: P[2].type.?, d: P[3].type.?) callconv(.c) R { return f(if (outline) og else vg, a, b, d); } },
         else => @compileError("arity"),
     };
 }
@@ -121,6 +124,15 @@ comptime {
         if (I.params.len < 1 or I.params.len > 4 or I.params[0].type.? != V.SpecGraph or !scalar(I.return_type.?)) continue;
         var ok = true;
         for (I.params[1..]) |p| ok = ok and scalar(p.type.?);
-        if (ok) @export(&Layout(v).c, .{ .name = "gx_" ++ d.name });
+        if (ok) @export(&Layout(v, false).c, .{ .name = "gx_" ++ d.name });
+    }
+    for (@typeInfo(O).@"struct".decls) |d| {
+        const v = @field(O, d.name);
+        if (@typeInfo(@TypeOf(v)) != .@"fn") continue;
+        const I = @typeInfo(@TypeOf(v)).@"fn";
+        if (I.params.len < 1 or I.params.len > 4 or I.params[0].type.? != O.SpecGraph or !scalar(I.return_type.?)) continue;
+        var ok = true;
+        for (I.params[1..]) |p| ok = ok and scalar(p.type.?);
+        if (ok) @export(&Layout(v, true).c, .{ .name = "gx_o_" ++ d.name });
     }
 }
