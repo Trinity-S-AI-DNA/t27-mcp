@@ -5,12 +5,13 @@
   "type": "module",
   "bin": { "t27-mcp": "./server.mjs" },
   "main": "server.mjs",
-  "files": ["server.mjs", "graph.mjs", "check.mjs", "examples.mjs", "brief.mjs", "find.mjs", "dashboard.mjs", "telegram.mjs", "deck-view.mjs", "wasm/explorer.wasm", "wasm/check_hints.wasm", "wasm/check_hints.mjs", "wasm/examples.wasm", "wasm/examples_table.mjs", "wasm/spec_brief.wasm", "wasm/spec_brief.mjs", "wasm/find.wasm", "wasm/find_table.mjs", "wasm/dashboard.wasm", "wasm/dashboard_table.mjs", "wasm/telegram.wasm", "wasm/telegram_table.mjs", "wasm/t27f.wasm", "wasm/t27f.build", "wasm/hot.wasm", "wasm/hot.mjs", "wasm/spec_graph_view.mjs", "wasm/spec_graph_export.mjs", "wasm/spec_graph_outline.mjs", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
+  "files": ["server.mjs", "graph.mjs", "check.mjs", "examples.mjs", "brief.mjs", "find.mjs", "dashboard.mjs", "telegram.mjs", "deck-view.mjs", "wasm/explorer.wasm", "wasm/check_hints.wasm", "wasm/check_hints.mjs", "wasm/examples.wasm", "wasm/examples_table.mjs", "wasm/spec_brief.wasm", "wasm/spec_brief.mjs", "wasm/find.wasm", "wasm/find_table.mjs", "wasm/dashboard.wasm", "wasm/dashboard_table.mjs", "wasm/telegram.wasm", "wasm/telegram_table.mjs", "schema.mjs", "wasm/tool_schema_table.mjs", "wasm/tool_schema.seal.json", "wasm/tool_schema.build", "wasm/t27f.wasm", "wasm/t27f.build", "wasm/hot.wasm", "wasm/hot.mjs", "wasm/spec_graph_view.mjs", "wasm/spec_graph_export.mjs", "wasm/spec_graph_outline.mjs", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.mjs",
     "smoke": "node smoke.mjs",
-    "check:t27f": "cd wasm && grep -v '^#' t27f.build | shasum -a 256 -c -"
+    "check:t27f": "cd wasm && grep -v '^#' t27f.build | shasum -a 256 -c -",
+    "check:schema": "cd wasm && grep -v '^#' tool_schema.build | shasum -a 256 -c -"
   },
   "license": "Apache-2.0",
   "private": true

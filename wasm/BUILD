@@ -309,3 +309,17 @@ sha256
   e1ed2d440b9040af4ca75b7d872f0f44ec395b14748b03209d8e99b7d893fa5c  telegram.t27 (source)
   a753d9e6da1d2a18d7a273f60a6fa1cdabcbe112f6a3aef7aeb3e780dbc7ddb8  telegram.wasm
   3046ca0d0042da073a06ec6551a06ace5890075d8c2fb050a0144541b380e9b2  telegram_table.mjs
+
+The input and output schema of every tool (gHashTag/t27#10444, epic #10066)
+  tool_schema_table.mjs   generated: t27c gen-js specs/t27mcp/tool_schema.t27 (module T27mcpToolSchema:
+                          TOOLS, 27 rows; FIELDS, 270 rows; the kind, profile and protocol constants)
+  tool_schema.seal.json   .trinity/seals/t27mcp_T27mcpToolSchema.json copied unchanged; its spec_hash is
+                          the catalog identity that tools/list returns in _meta["t27/catalog"]
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-js specs/t27mcp/tool_schema.t27 > tool_schema_table.mjs
+
+../schema.mjs turns the rows into JSON Schema and decides nothing about a field. A tool with no row
+stops the server at start. Record: tool_schema.build, checked by `npm run check:schema`. t27c 0.5.2.
+tool_schema.t27: 12 of 12 tests pass, 0 vacuous; one tuple bound mutated fails 2 tests (negative control).

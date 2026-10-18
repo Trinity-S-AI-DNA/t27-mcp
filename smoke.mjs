@@ -7,6 +7,9 @@
 // feed that changed shape — and neither is visible to an in-process call.
 
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import * as T from './wasm/tool_schema_table.mjs';
+import { build, profile } from './schema.mjs';
 
 const child = spawn('node', [new URL('./server.mjs', import.meta.url).pathname], { stdio: ['pipe', 'pipe', 'inherit'] });
 let buf = '';
@@ -44,8 +47,22 @@ const run = async () => {
   const init = await rpc('initialize', {});
   check('initialize returns this package version', init.serverInfo.version === JSON.parse(await import('node:fs/promises').then((f) => f.readFile(new URL('./package.json', import.meta.url), 'utf8'))).version, init.serverInfo.version);
 
-  const { tools } = await rpc('tools/list');
+  const { tools, _meta } = await rpc('tools/list');
   check('every tool has a description and a schema', tools.every((t) => t.description && t.inputSchema?.type === 'object'), `${tools.length} tools`);
+
+  // The schemas come from specs/t27mcp/tool_schema.t27 (wasm/tool_schema_table.mjs); these read them back off the wire.
+  const sch = Object.fromEntries(tools.map((t) => [t.name, t.inputSchema])), gr = sch.t27_grep, st27 = sch.t27f_view.properties.status, out = (n) => build(T.FIELDS.filter((f) => f.tool === T.TOOLS.findIndex((r) => r.name === n) && f.side === T.OUT));
+  check('every advertised tool has a row in the schema spec', tools.every((t) => T.TOOLS.some((r) => r.name === t.name)), `${tools.length} of ${T.TOOL_COUNT} rows`);
+  check('no schema holds a $ref, $defs or definitions', !/"\$ref"|"\$defs"|"definitions"/.test(JSON.stringify(tools)));
+  check('every input refuses unknown keys', tools.every((t) => t.inputSchema.additionalProperties === false));
+  check('the catalog identity is the seal hash of the spec', _meta?.['t27/catalog'] === `${JSON.parse(readFileSync(new URL('./wasm/tool_schema.seal.json', import.meta.url))).spec_hash}/p${profile}`, _meta?.['t27/catalog']);
+  check('an array keeps its length bound and item range', st27.type === 'array' && st27.maxItems === 27 && st27.items.minimum === 0 && st27.items.maximum === 255);
+  check('boolean, enum, integer bound and required survive', gr.properties.ignoreCase.type === 'boolean' && sch.t27_specs.properties.health.enum.join() === 'ok,warn,fail' && gr.properties.maxSpecs.maximum === 150 && gr.required.join() === 'pattern');
+  const cyc = out('t27_game').properties.rules.properties.cycle, line = out('t27_grep').properties.results.items.properties.hits.items.properties.line;
+  check('a tuple keeps its length and positions', cyc.prefixItems.length === 5 && cyc.minItems === 5 && cyc.maxItems === 5 && cyc.prefixItems[0].enum.join() === 'Issue');
+  check('a nested object keeps its integer bound four levels down', line.type === 'integer' && line.minimum === 1);
+  check(`the ${profile ? 'output' : 'input'} profile advertises ${profile ? 'an output schema per object tool' : 'no output schema'}`, tools.every((t) => !!t.outputSchema === (profile === T.PROFILE_OUTPUT && T.TOOLS.find((r) => r.name === t.name).out === T.OUT_OBJECT)) && init.protocolVersion === T.PROTOCOL[profile]);
+  if (profile) { const r = await rpc('tools/call', { name: 't27_formats', arguments: {} }); check('structuredContent is the text result', JSON.stringify(r.structuredContent) === JSON.stringify(JSON.parse(r.content[0].text))); }
 
   const st = await call('t27_status');
   check('status reaches the atlas', st.atlasError === null, st.atlasError || 'no error');

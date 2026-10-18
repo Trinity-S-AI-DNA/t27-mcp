@@ -26,6 +26,7 @@ import * as GX from './graph.mjs';
 import { find } from './find.mjs';
 import { dashboard, note as noteCall } from './dashboard.mjs';
 import { tgTools } from './telegram.mjs';
+import { schemas, meta as catalogMeta, protocol } from './schema.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -164,19 +165,6 @@ function filterSpecs(all, f) {
   return rows;
 }
 
-const SPEC_FILTERS = {
-  query: { type: 'string', description: 'Substring of path, name, module, description or summary' },
-  repo: { type: 'string', description: 't27 | trinity-fpga | tri-net | trios | tt-trinity-euler | …' },
-  category: { type: 'string', description: 'e.g. specs/numeric, specs/ml, specs/fpga' },
-  health: { type: 'string', description: 'ok | warn | fail' },
-  tag: { type: 'string', description: 'Exact tag, e.g. has/invariants, domain/numeric, size/large' },
-  failedBackend: { type: 'string', description: 'Specs a named backend refused, e.g. verilog_hir' },
-  hasLoss: { type: 'boolean', description: 'Specs with round-trip loss > 0' },
-  hasTcErrors: { type: 'boolean', description: 'Specs with type-check errors > 0' },
-  minLines: { type: 'number' },
-  maxLines: { type: 'number' },
-};
-
 // ------------------------------------------------------------------- tooling
 // t27f_view: every position, size and style index comes from specs/t27f/reel.t27 and, for the default
 // deck look, specs/t27f/deck.t27 (gHashTag/t27); their bodies run as wasm/t27f.wasm and their constants
@@ -198,10 +186,6 @@ const tools = [
     name: 't27_status',
     description:
       'Live provenance of the published T27 surface: source commit, spec count, health split with the failing specs named, backend failures, and the biggest tags. Everything else is read at this commit.',
-    inputSchema: {
-      type: 'object',
-      properties: { fresh: { type: 'boolean', description: 'Bypass the 5-minute cache' } },
-    },
     handler: async ({ fresh }) => {
       const m = await manifest(fresh);
       let a = null;
@@ -237,18 +221,6 @@ const tools = [
     name: 't27_formats',
     description:
       'The numeric-format catalog parsed live from the SSOT (specs/numeric/formats_catalog.t27). Returns the true count with cluster and status tallies, and filters. Never quote a count from memory — this is the source.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        cluster: { type: 'string', description: 'e.g. GoldenFloat, Ieee754Binary, Microscaling' },
-        status: { type: 'string', description: 'Verified | Historical | Experimental | Open_conjecture | Retracted' },
-        bits: { type: 'number' },
-        name: { type: 'string', description: 'Substring match on id or name' },
-        fields: { type: 'boolean', description: 'Return full rows instead of a summary (default false)' },
-        ref: { type: 'string', description: 'Git ref to read; default master' },
-        fresh: { type: 'boolean' },
-      },
-    },
     handler: async ({ cluster, status, bits, name, fields = false, ref, fresh }) => {
       const all = await catalog(ref, fresh);
       let rows = all;
@@ -273,15 +245,6 @@ const tools = [
   {
     name: 't27_format',
     description: 'One numeric format: every field on its SSOT row.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'Catalog id, e.g. gf16, tnf8, binary16' },
-        ref: { type: 'string' },
-        fresh: { type: 'boolean' },
-      },
-      required: ['id'],
-    },
     handler: async ({ id, ref, fresh }) => {
       const rows = await catalog(ref, fresh);
       const hit = rows.find((r) => r.id === id) || rows.find((r) => String(r.id).toLowerCase() === id.toLowerCase());
@@ -296,17 +259,6 @@ const tools = [
     name: 't27_specs',
     description:
       'Search the .t27 corpus on the published manifest: filter by path, repo, category, tag, compile health, failing backend, round-trip loss, type-check errors or size. Returns tallies over the matched set, so "which specs fail and why" is one call.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        ...SPEC_FILTERS,
-        sort: { type: 'string', description: 'lines | tokens | nodes | loss | tcErrors | path (default path)' },
-        desc: { type: 'boolean', description: 'Sort descending (default true for numeric sorts)' },
-        limit: { type: 'number', description: 'Default 50' },
-        fields: { type: 'boolean', description: 'Return the full manifest record per spec' },
-        fresh: { type: 'boolean' },
-      },
-    },
     handler: async ({ sort = 'path', desc, limit = 50, fields = false, fresh, ...f }) => {
       const m = await manifest(fresh);
       const all = m.specs || [];
@@ -335,16 +287,6 @@ const tools = [
     name: 't27_spec',
     description:
       'One spec: a short record (health, why it fails, loss, type-check errors, failing backends, size, summary, tags; fields: true for the whole manifest record with AST node kinds and emitted bytes per backend) and, on request, its actual .t27 source text.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: { type: 'string', description: 'Exact corpus path, e.g. specs/demos/hello_world.t27' },
-        source: { type: 'boolean', description: 'Include the .t27 source text (default false)' },
-        fields: { type: 'boolean', description: 'Return the whole manifest record (default false)' },
-        fresh: { type: 'boolean' },
-      },
-      required: ['path'],
-    },
     handler: async ({ path, source = false, fields = false, fresh }) => {
       const m = await manifest(fresh);
       const all = m.specs || [];
@@ -368,18 +310,6 @@ const tools = [
     name: 't27_grep',
     description:
       'Search inside .t27 source text across the corpus. Narrow with the same filters as t27_specs first — the search fetches one file per candidate spec, so it is capped. Returns matching lines with line numbers.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        pattern: { type: 'string', description: 'JavaScript regular expression, e.g. "fn\\\\s+requant" ' },
-        ignoreCase: { type: 'boolean', description: 'Default true' },
-        ...SPEC_FILTERS,
-        maxSpecs: { type: 'number', description: 'Candidate specs to open, default 40, hard cap 150' },
-        maxHitsPerSpec: { type: 'number', description: 'Default 5' },
-        fresh: { type: 'boolean' },
-      },
-      required: ['pattern'],
-    },
     handler: async ({ pattern, ignoreCase = true, maxSpecs = 40, maxHitsPerSpec = 5, fresh, ...f }) => {
       let re;
       try {
@@ -424,17 +354,6 @@ const tools = [
     name: 't27_issues',
     description:
       'Search the cross-repo issue index that the atlas links to specs. With `detail`, returns each issue\'s spec links: relation, coverage and why the link was made.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Substring of the issue title' },
-        repo: { type: 'string' },
-        spec: { type: 'string', description: 'Only issues linked to a spec whose id starts with, or path contains, this' },
-        detail: { type: 'boolean', description: 'Include the spec links behind each issue' },
-        limit: { type: 'number' },
-        fresh: { type: 'boolean' },
-      },
-    },
     handler: async ({ query, repo, spec, detail = false, limit = 40, fresh }) => {
       const a = await atlas(fresh);
       let rows = a.issues || [];
@@ -476,14 +395,6 @@ const tools = [
   {
     name: 't27_epics',
     description: 'Epics and rings from the queen foundation feed, with their closed-issue children.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        state: { type: 'string', description: 'open | closed' },
-        limit: { type: 'number' },
-        fresh: { type: 'boolean' },
-      },
-    },
     handler: async ({ state, limit = 30, fresh }) => {
       const f = await foundation(fresh);
       let eps = f.epics || [];
@@ -509,14 +420,6 @@ const tools = [
   {
     name: 't27_modules',
     description: 'Module map from the queen modules feed: language mix, size, last touched, open issues.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Substring of the module path' },
-        limit: { type: 'number' },
-        fresh: { type: 'boolean' },
-      },
-    },
     handler: async ({ query, limit = 40, fresh }) => {
       const q = await modules(fresh);
       let rows = q.modules || [];
@@ -534,14 +437,6 @@ const tools = [
   {
     name: 't27_worlds',
     description: 'The repositories the atlas covers, with descriptions, owners and the open opportunities it has found.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        opportunities: { type: 'boolean', description: 'Include the opportunity list' },
-        limit: { type: 'number' },
-        fresh: { type: 'boolean' },
-      },
-    },
     handler: async ({ opportunities = false, limit = 25, fresh }) => {
       const a = await atlas(fresh);
       return {
@@ -556,11 +451,6 @@ const tools = [
   {
     name: 't27_raw',
     description: 'Fetch any JSON published under t27.ai (read-only escape hatch), e.g. /queen/modules.json.',
-    inputSchema: {
-      type: 'object',
-      properties: { path: { type: 'string' }, fresh: { type: 'boolean' } },
-      required: ['path'],
-    },
     handler: async ({ path, fresh }) => {
       if (!path.startsWith('/')) throw new Error('path must start with /');
       // `//host/x` is a protocol-relative URL: appended to SITE it would still
@@ -576,10 +466,6 @@ const tools = [
     name: 't27_game',
     description:
       'The rules of Queen Hive, the operational game this corpus is the board of, plus the live board state. Read this before claiming anything about progress: the honesty rule here overrides every other signal.',
-    inputSchema: {
-      type: 'object',
-      properties: { fresh: { type: 'boolean' } },
-    },
     handler: async ({ fresh }) => {
       const m = await manifest(fresh);
       let f = null;
@@ -632,7 +518,6 @@ const tools = [
     name: 't27_check',
     description:
       'Check .t27 source before you commit to it: parse and typecheck with the real compiler front end, and get each error with its line, the source line and a short "write this instead" hint for foreign syntax (`in` as a name, `as u3`, `x++`, `a ? b : c`, `match`). ok:true means it parses and typechecks, not that it is right: the type checker does not yet resolve names or unknown types (gHashTag/t27#8087), so `return b;` with no `b` and `x: int` pass, and its tests are not run. Start the source with `module Name;`.',
-    inputSchema: { type: 'object', properties: { source: { type: 'string', description: 'The .t27 source text' } }, required: ['source'] },
     handler: ({ source }) => {
       if (typeof source !== 'string' || !source.trim()) throw new Error('source must be non-empty .t27 text');
       return check(source);
@@ -642,26 +527,18 @@ const tools = [
     name: 't27_examples',
     description:
       'Short, compiler-checked worked examples of .t27 idioms, cut from the published corpus at a pinned commit (at most 40 lines each). topic: clocked, comb, fn, test, or reset (async, sync, none). Use it before writing a clocked or combinational module, a test block or a reset; an unknown topic returns the list of topics.',
-    inputSchema: { type: 'object', properties: { topic: { type: 'string', description: 'e.g. "clocked counter", "comb", "fn", "test", "async reset", "no reset"' }, fresh: { type: 'boolean' } }, required: ['topic'] },
     handler: ({ topic, fresh }) => examples(String(topic ?? ''), (pin, path) => getText(`${RAW}/${pin}/${path}`, fresh)),
   },
   {
     name: 't27_find',
     description:
       'Find the existing, compiled-clean spec with tests that answers an intent, e.g. "clocked counter", "uart echo", "fifo". Ranks the corpus by the words of the intent in each spec name and path (rules in specs/t27mcp/find.t27) and returns nothing when no spec covers them well enough: a miss means write a new .t27 spec with tests (the reply says how). Specs that cover the intent but fail to compile or carry no tests are counted under skipped, not served. Call it before t27_specs or t27_grep when you know what you need, not where it is.',
-    inputSchema: { type: 'object', properties: { intent: { type: 'string', description: 'What the module does, e.g. "clocked counter with enable"' }, limit: { type: 'number', description: 'Default 5, at most 20' }, fresh: { type: 'boolean' } }, required: ['intent'] },
     handler: async ({ intent, limit, fresh }) => find((await manifest(fresh)).specs || [], intent, limit),
   },
   {
     name: 't27f_view',
     description:
       'Draw a still of the T27F demo reel (specs/t27f/reel.t27) as an SVG file and return its path. By default it is a presentation slide (specs/t27f/deck.t27); look 0 is the plain map. The Claude Code desktop app opens the path in its Browser pane; in a terminal, open the file yourself.',
-    inputSchema: { type: 'object', properties: {
-      scene: { type: 'integer', description: 'Demo scene 0..4; its still frame is drawn (default 2, the focus still)' }, frame: { type: 'integer', description: 'Exact frame instead of a scene still' },
-      preset: { type: 'integer', description: '0 wide 1280x720 (default), 1 square 1080x1080, 2 tall 1080x1920' }, out: { type: 'string', description: 'Output file (default: the temp directory)' },
-      status: { type: 'array', items: { type: 'integer' }, description: 'Lesson status code per cell (27); a missing one is a gap' }, labels: { type: 'array', items: { type: 'string' }, description: 'Label per cell (default: the cell number)' },
-      host: { type: 'integer', description: 'Host code for the channel line (default 1, Claude Code desktop)' }, look: { type: 'integer', description: '1 deck slide (default), 0 plain map' },
-      title: { type: 'string', description: 'Slide headline, at most 2 lines (default: the scene name)' }, subtitle: { type: 'string', description: 'Cover subtitle' }, rows: { type: 'array', items: { type: 'string' }, description: 'Card rows on a split slide, at most 4' } } },
     handler: async ({ scene = 2, frame, preset = deck.DEFAULT_PRESET, status = [], labels = [], host = reel.HOST_CLAUDE_CODE_DESKTOP, out, look = deck.DEFAULT_LOOK, title, subtitle, rows }) => {
       const f = frame ?? R.demo_still(scene), s = Number.isInteger(f) ? R.demo_scene_at(f) : reel.END_OF_REEL;
       if (s === reel.END_OF_REEL) throw new Error(`no such frame or scene: the demo reel has frames 0..${R.demo_frames() - 1}`);
@@ -689,14 +566,12 @@ const tools = [
     name: 't27f_outline',
     description:
       "A spec's structure from its T27F graph instead of its whole source: one line per declaration (kind, name, lines a-b, label) and per edge (calls, uses, constrains: from -> to, line of first use), plus a short derived list of which tests call which fn. Read by specs/t27f/spec_graph_export.t27, a deterministic byte scanner: every node and edge is EXACT, no derived or suggested edge is invented; the tested-by list is marked derived and is only an inversion of the exact test -> fn calls. The graph holds at most 192 nodes and 254 edges (top-level declarations and the edges between them); a larger spec is refused with that verdict, never truncated. Only the top level is read: nothing inside a struct or enum body, names are matched as text, not resolved.",
-    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Exact corpus path, e.g. specs/tutorial/08_modules_and_arrays.t27' }, fresh: { type: 'boolean' } }, required: ['path'] },
     handler: async ({ path, fresh }) => GX.outline(R, specPath(path), await specSource(specPath(path), fresh)),
   },
   {
     name: 't27f_graph',
     description:
       "Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, name, inference label and source lines. With path, the graph is the exact-only export of that corpus spec (specs/t27f/spec_graph_export.t27: no derived edges; at most 192 nodes and 254 edges, a larger spec is refused, never truncated). With fixture, the hand-read tutorial 08 graph: 0 as is, 1 with a suggestion. path wins when both are given.",
-    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Exact corpus path, e.g. specs/tutorial/08_modules_and_arrays.t27' }, fixture: { type: 'integer', description: '0 tutorial 08 (default), 1 with a suggestion' }, out: { type: 'string', description: 'Output file (default: the temp directory)' }, fresh: { type: 'boolean' } } },
     handler: async ({ path, fixture = 0, out, fresh }) => {
       const src = path !== undefined ? await specSource(specPath(path), fresh) : undefined;
       const build = () => {
@@ -741,12 +616,12 @@ const tools = [
     name: 't27_dashboard',
     description:
       'The session dashboard (specs/t27mcp/dashboard.t27): corpus health, this session\'s calls, errors and largest reply per tool, and the next step, graded ok/unknown/warn/bad. Returns one line for the agent and writes an HTML page for the operator (its path is in the line); MCP Apps hosts render the same page from ui://t27/dashboard.',
-    inputSchema: { type: 'object', properties: {} },
     _meta: { ui: { resourceUri: DASH_URI } },
     handler: async () => (await dash()).text,
   },
   ...tgTools,
 ];
+for (const t of tools) Object.assign(t, schemas(t.name)); // inputSchema (and outputSchema) from specs/t27mcp/tool_schema.t27
 
 const byName = new Map(tools.map((t) => [t.name, t]));
 
@@ -760,10 +635,10 @@ const dash = async () => dashboard(await manifest(false).catch((e) => ({ error: 
 async function handle(req) {
   const { method, params } = req;
   if (method === 'initialize')
-    return { protocolVersion: '2024-11-05', capabilities: { tools: {}, resources: {} }, serverInfo: { name: 't27-mcp', version: VERSION } };
+    return { protocolVersion: protocol, capabilities: { tools: {}, resources: {} }, serverInfo: { name: 't27-mcp', version: VERSION } };
   if (method === 'ping') return {};
   if (method === 'tools/list')
-    return { tools: tools.map(({ name, description, inputSchema, _meta }) => ({ name, description, inputSchema, _meta })) };
+    return { tools: tools.map(({ name, description, inputSchema, outputSchema, _meta }) => ({ name, description, inputSchema, outputSchema, _meta })), _meta: catalogMeta };
   if (method === 'tools/call') {
     const tool = byName.get(params?.name);
     if (!tool) throw new Error(`Unknown tool: ${params?.name}`);
@@ -776,7 +651,7 @@ async function handle(req) {
       noteCall(tool.name, 0, true); // the ledger the dashboard grades; a throw is a failed call
       throw e;
     }
-    return { content: [{ type: 'text', text }] };
+    return { content: [{ type: 'text', text }], ...(tool.outputSchema && { structuredContent: JSON.parse(text) }) };
   }
   if (method === 'resources/list') return { resources: [{ uri: DASH_URI, name: 't27 MCP dashboard', mimeType: DASH_MIME }] };
   if (method === 'resources/read') {
