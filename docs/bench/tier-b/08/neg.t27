@@ -1,0 +1,55 @@
+module BenchMat2;
+
+pub struct Mat2 {
+    a: i16,
+    b: i16,
+    c: i16,
+    d: i16,
+}
+
+fn identity() -> Mat2 {
+    return Mat2 { a: 1, b: 0, c: 0, d: 1 };
+}
+
+fn mul(m: Mat2, n: Mat2) -> Mat2 {
+    return Mat2 {
+        a: m.a * n.a + m.b * n.c,
+        b: m.a * n.b + m.b * n.d,
+        c: m.c * n.a + m.d * n.c,
+        d: m.c * n.b + m.d * n.d,
+    };
+}
+
+fn det(m: Mat2) -> i16 {
+    return m.a * m.d - m.b * m.c;
+}
+
+fn trace(m: Mat2) -> i16 {
+    return m.a + m.d;
+}
+
+fn transpose(m: Mat2) -> Mat2 {
+    return Mat2 { a: m.a, b: m.c, c: m.b, d: m.d };
+}
+
+fn pow(m: Mat2, n: u8) -> Mat2 {
+    var r : Mat2 = identity();
+    var i : u8 = 0;
+    while (i < n + 1) {
+        r = mul(r, m);
+        i = i + 1;
+    }
+    return r;
+}
+
+test det_and_trace {
+    let m : Mat2 = Mat2 { a: 2, b: 3, c: 4, d: 5 };
+    assert_eq(det(m), -2);
+    assert_eq(trace(m), 7);
+}
+test identity_is_neutral {
+    let m : Mat2 = Mat2 { a: 2, b: 3, c: 4, d: 5 };
+    let r : Mat2 = mul(m, identity());
+    assert_eq(r.a, 2);
+    assert_eq(r.d, 5);
+}

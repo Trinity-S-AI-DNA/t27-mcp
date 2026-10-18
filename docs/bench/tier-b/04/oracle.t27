@@ -1,0 +1,38 @@
+test oracle_vec2_add_sub_signed {
+    let p : Vec2 = Vec2 { x: -300, y: 25 };
+    let q : Vec2 = Vec2 { x: 120, y: -70 };
+    let s : Vec2 = add(p, q);
+    assert_eq(s.x, -180);
+    assert_eq(s.y, -45);
+    let d : Vec2 = sub(q, p);
+    assert_eq(d.x, 420);
+    assert_eq(d.y, -95);
+    let e : Vec2 = sub(p, p);
+    assert(is_zero(e));
+}
+test oracle_vec2_scale_negative {
+    let p : Vec2 = Vec2 { x: 7, y: -9 };
+    let s : Vec2 = scale(p, -3);
+    assert_eq(s.x, -21);
+    assert_eq(s.y, 27);
+    let z : Vec2 = scale(p, 0);
+    assert(is_zero(z));
+    assert(!is_zero(p));
+    assert(!is_zero(Vec2 { x: 0, y: 1 }));
+    assert(!is_zero(Vec2 { x: -1, y: 0 }));
+}
+test oracle_vec2_dot_and_cross_signs {
+    let a : Vec2 = Vec2 { x: 5, y: -2 };
+    let b : Vec2 = Vec2 { x: -3, y: 4 };
+    assert_eq(dot(a, b), -23);
+    assert_eq(cross(a, b), 14);
+    assert_eq(cross(b, a), -14);
+    assert_eq(cross(a, a), 0);
+    assert_eq(dot(Vec2 { x: 0, y: 0 }, b), 0);
+}
+test oracle_vec2_norm1 {
+    assert_eq(norm1(Vec2 { x: -3, y: 4 }), 7);
+    assert_eq(norm1(Vec2 { x: -30, y: -40 }), 70);
+    assert_eq(norm1(Vec2 { x: 0, y: 0 }), 0);
+    assert_eq(norm1(Vec2 { x: 12, y: 0 }), 12);
+}

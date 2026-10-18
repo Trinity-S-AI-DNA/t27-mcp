@@ -1,0 +1,54 @@
+test oracle_mat2_mul_is_not_commutative {
+    let m : Mat2 = Mat2 { a: 1, b: 2, c: 3, d: 4 };
+    let n : Mat2 = Mat2 { a: 0, b: 1, c: -1, d: 5 };
+    let mn : Mat2 = mul(m, n);
+    assert_eq(mn.a, -2);
+    assert_eq(mn.b, 11);
+    assert_eq(mn.c, -4);
+    assert_eq(mn.d, 23);
+    let nm : Mat2 = mul(n, m);
+    assert_eq(nm.a, 3);
+    assert_eq(nm.b, 4);
+    assert_eq(nm.c, 14);
+    assert_eq(nm.d, 18);
+}
+test oracle_mat2_det_trace_transpose {
+    let m : Mat2 = Mat2 { a: -3, b: 7, c: 2, d: -5 };
+    assert_eq(det(m), 1);
+    assert_eq(trace(m), -8);
+    let t : Mat2 = transpose(m);
+    assert_eq(t.a, -3);
+    assert_eq(t.b, 2);
+    assert_eq(t.c, 7);
+    assert_eq(t.d, -5);
+    let i : Mat2 = identity();
+    assert_eq(i.a, 1);
+    assert_eq(i.b, 0);
+    assert_eq(i.c, 0);
+    assert_eq(i.d, 1);
+}
+test oracle_mat2_pow_fibonacci {
+    let f : Mat2 = Mat2 { a: 1, b: 1, c: 1, d: 0 };
+    let p : Mat2 = pow(f, 10);
+    assert_eq(p.a, 89);
+    assert_eq(p.b, 55);
+    assert_eq(p.c, 55);
+    assert_eq(p.d, 34);
+    assert_eq(det(p), 1);
+    let one : Mat2 = pow(f, 1);
+    assert_eq(one.a, 1);
+    assert_eq(one.d, 0);
+}
+test oracle_mat2_pow_zero_and_asymmetric {
+    let m : Mat2 = Mat2 { a: 2, b: 1, c: 0, d: -1 };
+    let z : Mat2 = pow(m, 0);
+    assert_eq(z.a, 1);
+    assert_eq(z.b, 0);
+    assert_eq(z.c, 0);
+    assert_eq(z.d, 1);
+    let p3 : Mat2 = pow(m, 3);
+    assert_eq(p3.a, 8);
+    assert_eq(p3.b, 3);
+    assert_eq(p3.c, 0);
+    assert_eq(p3.d, -1);
+}

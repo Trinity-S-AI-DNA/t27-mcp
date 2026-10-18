@@ -1,0 +1,70 @@
+module BenchHist;
+
+var h : [8]u8 = [0, 0, 0, 0, 0, 0, 0, 0]
+
+fn reset() {
+    var i : u8 = 0;
+    while (i < 8) {
+        h[i] = 0;
+        i = i + 1;
+    }
+}
+
+fn add(s: u8) {
+    let b : u8 = s >> 5;
+    if (h[b] < 255) {
+        h[b] = h[b] + 1;
+    }
+}
+
+fn count(b: u8) -> u8 {
+    return h[b];
+}
+
+fn total() -> u16 {
+    var t : u16 = 0;
+    var i : u8 = 0;
+    while (i < 8) {
+        t = t + (h[i] as u16);
+        i = i + 1;
+    }
+    return t;
+}
+
+fn peak() -> u8 {
+    var best : u8 = 0;
+    var i : u8 = 1;
+    while (i < 8) {
+        if (h[i] > h[best]) {
+            best = i;
+        }
+        i = i + 1;
+    }
+    return best;
+}
+
+fn nonempty() -> u8 {
+    var n : u8 = 0;
+    var i : u8 = 0;
+    while (i < 8) {
+        if (h[i] > 0) {
+            n = n + 1;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
+test buckets_by_32 {
+    reset();
+    add(0);
+    add(31);
+    add(32);
+    assert_eq(count(0), 2);
+    assert_eq(count(1), 1);
+}
+test peak_of_empty {
+    reset();
+    assert_eq(peak(), 0);
+    assert_eq(total(), 0);
+}

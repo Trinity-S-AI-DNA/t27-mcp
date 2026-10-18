@@ -1,0 +1,62 @@
+module BenchWindow;
+
+var slots : [4]i16 = [0, 0, 0, 0]
+var pos : u8 = 0
+
+fn reset() {
+    var i : u8 = 0;
+    while (i < 4) {
+        slots[i] = 0;
+        i = i + 1;
+    }
+    pos = 0;
+}
+
+fn add(x: i16) {
+    slots[pos] = x;
+    pos = (pos + 1) & 3;
+}
+
+fn sum() -> i16 {
+    return slots[0] + slots[1] + slots[2] + slots[3];
+}
+
+fn max4() -> i16 {
+    var m : i16 = 0;
+    var i : u8 = 1;
+    while (i < 4) {
+        if (slots[i] > m) {
+            m = slots[i];
+        }
+        i = i + 1;
+    }
+    return m;
+}
+
+fn min4() -> i16 {
+    var m : i16 = slots[0];
+    var i : u8 = 1;
+    while (i < 4) {
+        if (slots[i] < m) {
+            m = slots[i];
+        }
+        i = i + 1;
+    }
+    return m;
+}
+
+test sum_of_two {
+    reset();
+    add(3);
+    add(-8);
+    assert_eq(sum(), -5);
+}
+test overwrite_oldest {
+    reset();
+    add(1);
+    add(2);
+    add(3);
+    add(4);
+    add(10);
+    assert_eq(sum(), 19);
+}

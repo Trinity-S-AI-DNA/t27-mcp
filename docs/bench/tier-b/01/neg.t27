@@ -1,0 +1,53 @@
+module BenchStack;
+
+var items : [8]i16 = [0, 0, 0, 0, 0, 0, 0, 0]
+var sp : u8 = 0
+
+fn reset() {
+    sp = 0;
+}
+
+fn depth() -> u8 {
+    return sp;
+}
+
+fn is_full() -> bool {
+    return sp >= 7;
+}
+
+fn push(v: i16) -> bool {
+    if (sp == 8) {
+        return false;
+    }
+    items[sp] = v;
+    sp = sp + 1;
+    return true;
+}
+
+fn pop() -> i16 {
+    if (sp == 0) {
+        return 0;
+    }
+    sp = sp - 1;
+    return items[sp];
+}
+
+fn peek() -> i16 {
+    if (sp == 0) {
+        return 0;
+    }
+    return items[sp - 1];
+}
+
+test lifo_order {
+    reset();
+    assert(push(-5));
+    assert(push(7));
+    assert_eq(pop(), 7);
+    assert_eq(pop(), -5);
+}
+test empty_pop_is_zero {
+    reset();
+    assert_eq(pop(), 0);
+    assert_eq(depth(), 0);
+}

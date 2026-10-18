@@ -1,0 +1,45 @@
+module BenchSat8;
+
+fn clamp8(s: i16) -> i8 {
+    if (s > 127) {
+        return 127;
+    }
+    if (s < -128) {
+        return -128;
+    }
+    return s as i8;
+}
+
+fn sat_add(a: i8, b: i8) -> i8 {
+    return clamp8((a as i16) + (b as i16));
+}
+
+fn sat_sub(a: i8, b: i8) -> i8 {
+    return clamp8((a as i16) - (b as i16));
+}
+
+fn sat_neg(a: i8) -> i8 {
+    return clamp8(0 - (a as i16));
+}
+
+fn sat_abs(a: i8) -> i8 {
+    if (a < 0) {
+        return sat_neg(a);
+    }
+    return a;
+}
+
+fn avg_floor(a: i8, b: i8) -> i8 {
+    let s : i16 = (a as i16) + (b as i16);
+    return (s >> 1) as i8;
+}
+
+test add_saturates {
+    assert_eq(sat_add(100, 100), 127);
+    assert_eq(sat_add(-100, -100), -128);
+    assert_eq(sat_add(-5, 3), -2);
+}
+test abs_of_min {
+    assert_eq(sat_abs(-128), 127);
+    assert_eq(sat_abs(-7), 7);
+}

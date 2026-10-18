@@ -1,0 +1,60 @@
+test oracle_bank_deposit_withdraw_rules {
+    reset();
+    assert(deposit(2, 100) == Res.Ok);
+    assert(deposit(4, 5) == Res.NoAccount);
+    assert(deposit(255, 5) == Res.NoAccount);
+    assert(withdraw(4, 1) == Res.NoAccount);
+    assert(withdraw(2, 101) == Res.Insufficient);
+    assert_eq(balance(2), 100);
+    assert(withdraw(2, 100) == Res.Ok);
+    assert_eq(balance(2), 0);
+    assert(withdraw(2, 1) == Res.Insufficient);
+    assert_eq(total(), 0);
+}
+test oracle_bank_frozen_blocks_everything {
+    reset();
+    assert(deposit(1, 500) == Res.Ok);
+    freeze(1);
+    assert(deposit(1, 1) == Res.Frozen);
+    assert(withdraw(1, 1) == Res.Frozen);
+    assert(withdraw(1, 100000) == Res.Frozen);
+    assert_eq(balance(1), 500);
+    unfreeze(1);
+    assert(withdraw(1, 200) == Res.Ok);
+    assert_eq(balance(1), 300);
+}
+test oracle_bank_transfer_order_of_checks {
+    reset();
+    assert(deposit(0, 100) == Res.Ok);
+    assert(transfer(0, 1, 40) == Res.Ok);
+    assert_eq(balance(0), 60);
+    assert_eq(balance(1), 40);
+    assert(transfer(0, 0, 10) == Res.SameAccount);
+    assert(transfer(4, 4, 10) == Res.NoAccount);
+    assert(transfer(0, 7, 10) == Res.NoAccount);
+    assert(transfer(9, 0, 10) == Res.NoAccount);
+    freeze(1);
+    assert(transfer(0, 1, 5) == Res.Frozen);
+    assert(transfer(1, 0, 5) == Res.Frozen);
+    assert(transfer(1, 0, 5000) == Res.Frozen);
+    unfreeze(1);
+    assert(transfer(0, 1, 61) == Res.Insufficient);
+    assert_eq(balance(0), 60);
+    assert_eq(balance(1), 40);
+    assert(transfer(0, 3, 60) == Res.Ok);
+    assert_eq(balance(0), 0);
+    assert_eq(balance(3), 60);
+    assert_eq(total(), 100);
+}
+test oracle_bank_large_balances_and_reset {
+    reset();
+    assert(deposit(3, 2000000000) == Res.Ok);
+    assert(transfer(3, 2, 1999999999) == Res.Ok);
+    assert_eq(balance(3), 1);
+    assert_eq(balance(2), 1999999999);
+    freeze(0);
+    reset();
+    assert(deposit(0, 1) == Res.Ok);
+    assert_eq(total(), 1);
+    assert_eq(balance(3), 0);
+}

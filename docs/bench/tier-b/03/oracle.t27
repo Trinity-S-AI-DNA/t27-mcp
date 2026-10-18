@@ -1,0 +1,57 @@
+test oracle_sort6_full_order {
+    reset();
+    set(0, 30);
+    set(1, -20);
+    set(2, 10);
+    set(3, -20);
+    set(4, 0);
+    set(5, -32768);
+    assert(!is_sorted());
+    sort();
+    assert_eq(get(0), -32768);
+    assert_eq(get(1), -20);
+    assert_eq(get(2), -20);
+    assert_eq(get(3), 0);
+    assert_eq(get(4), 10);
+    assert_eq(get(5), 30);
+    assert(is_sorted());
+}
+test oracle_sort6_reverse_sorted_input {
+    reset();
+    set(0, 6);
+    set(1, 5);
+    set(2, 4);
+    set(3, 3);
+    set(4, 2);
+    set(5, 1);
+    sort();
+    assert_eq(get(0), 1);
+    assert_eq(get(1), 2);
+    assert_eq(get(2), 3);
+    assert_eq(get(3), 4);
+    assert_eq(get(4), 5);
+    assert_eq(get(5), 6);
+}
+test oracle_sort6_median_keeps_order {
+    reset();
+    set(0, 9);
+    set(1, -4);
+    set(2, 7);
+    set(3, 1);
+    set(4, 100);
+    set(5, -50);
+    assert_eq(median_low(), 1);
+    assert_eq(get(0), 9);
+    assert_eq(get(5), -50);
+    assert(!is_sorted());
+}
+test oracle_sort6_equal_and_zero_defaults {
+    reset();
+    set(2, 4);
+    assert(!is_sorted());
+    assert_eq(median_low(), 0);
+    sort();
+    assert_eq(get(5), 4);
+    assert_eq(get(0), 0);
+    assert(is_sorted());
+}

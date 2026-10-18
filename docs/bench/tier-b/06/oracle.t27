@@ -1,0 +1,42 @@
+test oracle_sat8_add_edges {
+    assert_eq(sat_add(127, 1), 127);
+    assert_eq(sat_add(127, 0), 127);
+    assert_eq(sat_add(-128, -1), -128);
+    assert_eq(sat_add(-128, 127), -1);
+    assert_eq(sat_add(64, 63), 127);
+    assert_eq(sat_add(64, 64), 127);
+    assert_eq(sat_add(-64, -64), -128);
+    assert_eq(sat_add(-64, -65), -128);
+}
+test oracle_sat8_sub_edges {
+    assert_eq(sat_sub(0, -128), 127);
+    assert_eq(sat_sub(-128, 1), -128);
+    assert_eq(sat_sub(100, -100), 127);
+    assert_eq(sat_sub(-100, 100), -128);
+    assert_eq(sat_sub(5, 9), -4);
+    assert_eq(sat_sub(-128, -128), 0);
+    assert_eq(sat_sub(127, 127), 0);
+}
+test oracle_sat8_neg_abs {
+    assert_eq(sat_neg(-128), 127);
+    assert_eq(sat_neg(127), -127);
+    assert_eq(sat_neg(0), 0);
+    assert_eq(sat_neg(-1), 1);
+    assert_eq(sat_abs(-128), 127);
+    assert_eq(sat_abs(-127), 127);
+    assert_eq(sat_abs(-1), 1);
+    assert_eq(sat_abs(100), 100);
+    assert_eq(sat_abs(0), 0);
+}
+test oracle_sat8_avg_floor {
+    assert_eq(avg_floor(-3, 0), -2);
+    assert_eq(avg_floor(3, 0), 1);
+    assert_eq(avg_floor(127, 127), 127);
+    assert_eq(avg_floor(-128, -128), -128);
+    assert_eq(avg_floor(-128, -127), -128);
+    assert_eq(avg_floor(-128, 127), -1);
+    assert_eq(avg_floor(100, 99), 99);
+    assert_eq(avg_floor(-100, -99), -100);
+    assert_eq(avg_floor(-1, 0), -1);
+    assert_eq(avg_floor(-1, -2), -2);
+}
