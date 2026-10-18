@@ -114,3 +114,27 @@ sha256
   30e9ff01219064942c47160c986fe756caf457a39b7977ca71635186d713e455  examples.t27 (source)
   fe4aa36b9dbee38020366d82621648b194615f8e2dbb69a6370eec86162a28ed  examples_table.mjs
   e725626f74d8f9612fdb92668c6b6f1ea6ac3c877558a1578ef3cddab00fa403  examples.wasm
+
+t27_spec brief mode and whyFailing (gHashTag/t27 issue, epic #10066)
+
+  spec_brief.wasm   generated from specs/t27mcp/spec_brief.t27 (module T27mcpSpecBrief)
+                    by the C route: why_mask(u32 x5) -> u32, a bit set of failure reasons.
+  spec_brief.mjs    generated: t27c gen-js specs/t27mcp/spec_brief.t27 (BRIEF_FIELDS, ONE_FIELDS,
+                    W_* bits, WHY_TEXT templates)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/spec_brief.t27 > spec_brief.c
+  t27c gen-js specs/t27mcp/spec_brief.t27 > spec_brief.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=why_mask -o spec_brief.wasm spec_brief.c
+
+../brief.mjs copies the spec's field lists out of a manifest row and fills the `{}` of the
+reason templates. t27c 0.5.2, zig 0.16.0. spec_brief.t27: 5 of 5 tests pass, 0 vacuous; with
+the not-parsed test inverted three tests fail (negative control). The reasons agree with the
+JavaScript they replaced on all 2402 manifest specs (113 failing, 0 differences).
+
+sha256
+  21a9c9775f85f185f71dbf36fed8b1bf1b9903fc14f7eba2c57a45457d1f09bd  spec_brief.t27 (source)
+  66bb16ab09ed795ce0f588b183fba9002384af6eca1df45cc842ed9ccae52c32  spec_brief.mjs
+  316e8b14123da9e80eaf9861cc14ab3c7d3595a65978dd2a9645aa02a6732833  spec_brief.wasm

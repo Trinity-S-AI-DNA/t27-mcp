@@ -21,6 +21,7 @@ import * as G from './wasm/spec_graph_view.mjs';
 import { slide } from './deck-view.mjs';
 import { check } from './check.mjs';
 import { examples } from './examples.mjs';
+import { brief, one, failureReasons } from './brief.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -118,38 +119,6 @@ const tally = (rows, key) =>
   );
 
 const topN = (obj, n) => Object.fromEntries(Object.entries(obj).slice(0, n));
-
-// `health: "fail"` covers two unrelated events, and the difference is invisible
-// unless you read the AST counters. A spec that never parsed reports loss 0,
-// tcErrors 0 and no failed backend — not because it is clean, but because
-// nothing downstream of the parser ever ran. Two of the six failing specs are
-// that case, and they had been read as unexplained.
-//
-// Derived from observable manifest fields only; it adds no claim of its own.
-function failureReasons(s) {
-  if (s.health !== 'fail') return undefined;
-  const why = [];
-  if (!Number(s.nodes)) why.push('not-parsed: the manifest records no AST, so no backend ran');
-  if (s.failedBackends?.length) why.push(`backend: ${s.failedBackends.join(', ')} returned nothing`);
-  if (Number(s.tcErrors)) why.push(`typecheck: ${s.tcErrors} error(s)`);
-  if (Number(s.loss)) why.push(`round-trip loss: ${s.loss}`);
-  if (!why.length) why.push('unknown: marked fail with no counter to explain it');
-  return why;
-}
-
-// A spec row trimmed to what a reader almost always wants. `fields: true` on
-// the search tools returns the whole record instead.
-const brief = (s) => ({
-  path: s.path,
-  repo: s.repo,
-  name: s.name,
-  health: s.health,
-  lines: s.lines,
-  loss: s.loss,
-  tcErrors: s.tcErrors,
-  failedBackends: s.failedBackends?.length ? s.failedBackends : undefined,
-  whyFailing: failureReasons(s),
-});
 
 // Run `fn` over `items` with a bounded number in flight. The corpus is 1407
 // specs; an unbounded Promise.all over even a filtered slice of it opens enough
@@ -354,17 +323,18 @@ const tools = [
   {
     name: 't27_spec',
     description:
-      'One spec: its whole manifest record (health, loss, type-check errors, failing backends, AST node kinds, emitted bytes per backend, tags) and, on request, its actual .t27 source text.',
+      'One spec: a short record (health, why it fails, loss, type-check errors, failing backends, size, summary, tags; fields: true for the whole manifest record with AST node kinds and emitted bytes per backend) and, on request, its actual .t27 source text.',
     inputSchema: {
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Exact corpus path, e.g. specs/demos/hello_world.t27' },
         source: { type: 'boolean', description: 'Include the .t27 source text (default false)' },
+        fields: { type: 'boolean', description: 'Return the whole manifest record (default false)' },
         fresh: { type: 'boolean' },
       },
       required: ['path'],
     },
-    handler: async ({ path, source = false, fresh }) => {
+    handler: async ({ path, source = false, fields = false, fresh }) => {
       const m = await manifest(fresh);
       const all = m.specs || [];
       const hit =
@@ -378,7 +348,7 @@ const tools = [
           .slice(0, 10);
         throw new Error(`No spec "${path}". Nearby paths: ${near.join(', ') || 'none'}`);
       }
-      const out = { ...hit, whyFailing: failureReasons(hit), sourceUrl: `${SITE}/t27/files/${hit.path}` };
+      const out = { ...(fields ? { ...hit, whyFailing: failureReasons(hit) } : one(hit)), sourceUrl: `${SITE}/t27/files/${hit.path}` };
       if (source) out.source = await specSource(hit.path, fresh);
       return out;
     },
