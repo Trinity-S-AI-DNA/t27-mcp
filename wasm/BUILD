@@ -42,7 +42,10 @@ deck.mjs supply the constants (presets, regions, type sizes, palette, scene
 names, demo reel tables, style codes). ../deck-view.mjs draws the slide and
 ../server.mjs the plain map; both only write SVG.
 
-Rebuild (on the Railway lab, never on the owner's Mac), from specs/t27f/:
+Rebuild (on the Railway lab, never on the owner's Mac): the rule is specs/t27f/build.t27 in gHashTag/t27
+(#10229): build again only when the closure of the exporter specs, the zig version, the t27c binary or
+export.zig changed, else reuse. Its `tri t27f build` glue is parked (the foreign-budget gate refuses new
+hand-written Rust), so until it lands run the commands below from specs/t27f/ and write t27f.build:
 
   t27c gen    reel.t27 > reel.zig
   t27c gen    deck.t27 > deck.zig
@@ -107,25 +110,12 @@ Host side, ../graph.mjs: byte input and output only, see the list above. It stil
 nodes and edges and names a node kind, edge kind, label or verdict from the generated constants
 of spec_graph_view.mjs (those name tables are not emitted by gen-js).
 
-sha256
-  a3dbe0ec5110c48183ebea101109598e8542bb0ffdf9e061c672162d7da03fe7  spec_graph.t27 (source)
-  ef4ee24d5debc51be4a10835947c86a0211b867dd6ca97890a15198daa744728  spec_graph_export.t27 (source)
-  5297308f1d54c2688801995d56db402809fc794a7dbe5f28ad119c5b3593ede7  spec_graph_export.zig
-  0f379cfd0ff5d3d5c6c62c8510c191bdaef7bdb89f59126b6c28c741ab3aec5c  spec_graph_export.mjs
-  c47b21cea1d7169da6528e321cf2d2c513d3f552c0cd04fe9d37bbd5314ccacf  reel.t27 (source)
-  bd8ef9fc155365c805ba716d97155bed1e4017c378dbc335e252bcb244512147  deck.t27 (source)
-  997f3fc1d04e78ef3c8681c7b0b726d75341cc96928710771bca279cbd1184ba  reel.zig
-  b7e1efaba309134633cd13cafe5515c0eab1ae403c229d0fca6ae3ea1dafe00c  deck.zig
-  4dc1a0db9968c7a74495b499c480c2093425f653d49265d2f21c83f24e1835ac  reel.mjs
-  5a060aa5777ae6f7ff0317da0c86551410a1ab87e179ad2f8bc75ba08c2c2f7c  deck.mjs
-  22579bc98aecb3c4405991eef8b5060eb4151b17b200dfbae07a75d8b1e8547a  spec_graph_view.t27 (source)
-  191d55d9bb54d57017943a1903790e4661dfd237dfe507804cef3fcdfab33c19  spec_graph_view.zig
-  739118fa01cf501bdb3eab925ef9404873230a82907faf5e6e44c006e206c962  spec_graph_view.mjs
-  a5ff9792202408ac5bc68f9a479a38671c5eebd970886ab48ee65508feeeab2f  export.zig
-  92e0bf52018e6eabebec1705d04a15450a2ebd8abe1b737891a9ad3c0991a1c7  spec_graph_outline.t27 (source)
-  581f9c9af4f5b489c8a7e275e757fae648b84ef6d00c5b333fd417a8e97cb0e8  spec_graph_outline.zig
-  a8102abac8b3096b109c9337ad69ad61149efc36870f74bdd4d3a0a1205a21ff  spec_graph_outline.mjs
-  deedd9c104392469348df452c72d1f4e4f1a68930ba8acb130110bf92c65cd56  t27f.wasm
+The build record is t27f.build, written by the build rule above: the `#` lines hold the inputs (closure digest,
+zig version, t27c sha256) and every other line is `<sha256>  <file>` for export.zig and each generated file.
+It is the only list of checksums for the T27F wasm; check it with `npm run check:t27f`. The hand-pasted list
+that stood here drifted from the trinity copy (the wasm there was 7b2a0f0c, this one deedd9c1), so there is
+none now. The spec_graph_view.t27 colours changed on master since the old build (a dark theme); this build
+has them, as the trinity copy already did.
 
 t27_check (gHashTag/t27#10073, epic #10066)
 
