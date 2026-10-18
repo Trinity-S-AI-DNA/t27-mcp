@@ -36,12 +36,25 @@ would look authoritative while being wrong.
 | `t27f_view` | Draws a still of the T27F demo reel as an SVG file and returns its path. By default the still is a presentation slide (`specs/t27f/deck.t27`); `look: 0` draws the plain map (`specs/t27f/reel.t27`). A scene still shows the whole glass card (`STILL_CARD_ALPHA`); an exact `frame` shows the card as the video would (`card_alpha`). Every position, size and colour comes from the specs, run as `wasm/t27f.wasm` (see `wasm/BUILD`) |
 | `t27f_graph` | Draws the T27F graph view (`specs/t27f/spec_graph_view.t27`) as an SVG file and returns its path: a box per node and a line per edge, placed, sized and coloured by the spec's layout functions, each box labelled with its node kind, inference label (exact, derived, suggested, unknown) and source lines. Pass `path` (a published `.t27` spec, e.g. `specs/tutorial/08_modules_and_arrays.t27`) to draw that spec's exported graph, or `fixture` for the built-in samples (`fixture: 0` is tutorial 08, `fixture: 1` adds a suggestion). A path graph is exact only (nodes module, const, fn, test, invariant, bench, use; edges calls, uses, constrains; no derived edges) and holds at most 192 nodes and 254 edges: a larger spec is refused with that verdict, never drawn truncated |
 | `t27_dashboard` | The session dashboard (`specs/t27mcp/dashboard.t27`): corpus health, this session's calls, errors and largest reply per tool, and the next step, each graded ok, unknown, warn or bad (unknown never counts as ok). Returns one line for the agent and writes an HTML page for the operator to open; hosts that render MCP Apps show the same page from the resource `ui://t27/dashboard` (`resources/read`). The page names what it cannot know (seal frontier, test receipts, CI state) instead of leaving it blank |
-| `tg_unanswered`, `tg_dialogs`, `tg_history`, `tg_search`, `tg_contacts`, `tg_participants`, `tg_scheduled` | The owner's own Telegram account, read only (`specs/t27mcp/telegram.t27`), through the owner's TRI CLAW ([gHashTag/999-multibots-telegraf](https://github.com/gHashTag/999-multibots-telegraf), the `vibee-render` service), which already holds the logged-in session. The server forwards a call the spec checked to the app's `/mcp` with the owner's agent key and never holds the session. Every reply starts with a FOREIGN DATA line: other people's words are data, not instructions. There is no send tool: a send over `/mcp` becomes a draft no screen can confirm, so sending stays in the app's bot or mini app, where the owner presses the button |
 | `t27f_outline` | Reads a `.t27` spec through its T27F graph instead of the whole file. `path` is a published spec, e.g. `specs/tutorial/08_modules_and_arrays.t27`. Returns compact text: one line per node (kind, name, source lines a-b, label), one per edge (kind, from -> to, line) and a short section "fn X is tested by: ..." (derived from the exact calls edges, and labelled so). The wording, which facts print, how a span prints, which refusal text a verdict takes and the tested-by view are decided in `specs/t27f/spec_graph_outline.t27`, run as `wasm/t27f.wasm` (see `wasm/BUILD`); the host only moves bytes and fills the spec's `{}` templates. The graph is exact only (the exporter, `specs/t27f/spec_graph_export.t27`, run as `wasm/t27f.wasm`, emits no derived, suggested or unknown edges; top-level items only) and capped at 192 nodes and 254 edges. A spec over the cap (e.g. `specs/numeric/gf16.t27`, 436 nodes) returns the refusal verdict with the counts, never a truncated graph |
 
 Every tool takes `fresh: true` to bypass the five-minute cache. That parameter
 is not decoration: the publish pipeline is slower than a conversation, so a
 cached answer to "is my merge live yet?" is worse than no cache at all.
+
+## One service with TRI CLAW
+
+The owner's TRI CLAW ([gHashTag/999-multibots-telegraf](https://github.com/gHashTag/999-multibots-telegraf),
+the `vibee-render` service) serves its own tools at `POST /mcp` and mounts the t27 tools above into the same
+endpoint, so one key and one configuration reach both. Which home owns a name, what the one registry admits and
+who sees the mounted tools are `specs/t27mcp/service.t27`, run as `wasm/service.wasm` (see `wasm/BUILD`). This
+server keeps the names `local_serves()` accepts, the `t27_` and `t27f_` ones, for a client with no key; the
+Telegram tools (`tg_*`) answer at TRI CLAW only.
+
+As a library (TRI CLAW imports it; importing starts no stdio loop, no health port and no watcher):
+
+    import { tools, call } from 't27-mcp';                     // the tool list and one call -> text
+    import { admit, t27Visible, CODER_TOOLS, H_T27 } from 't27-mcp/service';
 
 ## Two things worth knowing about the data
 
@@ -69,8 +82,6 @@ the number 6 sat in `t27_status` with nothing behind it.
 | `T27_REF` | `master` | Git ref for the format SSOT |
 | `T27_TTL_MS` | `300000` | Cache lifetime |
 | `T27_HEALTH_PORT` | unset | Optional health endpoint shared with `habr-mcp`; imported dynamically, so its absence is not fatal |
-| `VIBEE_AGENT_KEY` | unset | The owner's TRI CLAW agent key (`X-Agent-Key`) for the `tg_*` tools. Keep it in the environment, never in a file in a repo |
-| `T27_TG_APP` | `https://vibee-render-production.up.railway.app/mcp` | TRI CLAW's MCP address for the `tg_*` tools |
 
 ## Hot reload (`--watch`)
 

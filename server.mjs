@@ -11,10 +11,11 @@
 // source meant "which specs are failing?" had no answer here at all, while the
 // number 6 sat in t27_status with no way to drill into it.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
+import { pathToFileURL } from 'node:url';
 import * as reel from './wasm/reel.mjs';
 import * as deck from './wasm/deck.mjs';
 import * as G from './wasm/spec_graph_view.mjs';
@@ -25,9 +26,9 @@ import { brief, one, failureReasons } from './brief.mjs';
 import * as GX from './graph.mjs';
 import { find } from './find.mjs';
 import { dashboard, note as noteCall } from './dashboard.mjs';
-import { tgTools } from './telegram.mjs';
+import { localServes } from './service.mjs';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
 const RAW = 'https://raw.githubusercontent.com/gHashTag/t27';
 const REF = process.env.T27_REF || 'master';
@@ -193,7 +194,8 @@ const specPath = (p) => {
 };
 
 const DASH_URI = 'ui://t27/dashboard', DASH_MIME = 'text/html;profile=mcp-app';
-const tools = [
+// Exported for TRI CLAW, which mounts these tools into its own /mcp (service.mjs, specs/t27mcp/service.t27).
+export const tools = [
   {
     name: 't27_status',
     description:
@@ -745,10 +747,24 @@ const tools = [
     _meta: { ui: { resourceUri: DASH_URI } },
     handler: async () => (await dash()).text,
   },
-  ...tgTools,
-];
+].filter((t) => localServes(t.name)); // the tg_* tools answer at TRI CLAW's /mcp; this server keeps the t27 names
 
 const byName = new Map(tools.map((t) => [t.name, t]));
+
+// One call, as both servers answer it: the tool's reply as text, noted in the ledger the dashboard grades.
+export async function call(name, args) {
+  const tool = byName.get(name);
+  if (!tool) throw new Error(`Unknown tool: ${name}`);
+  try {
+    const result = await tool.handler(args || {});
+    const text = typeof result === 'string' ? result : JSON.stringify(result, null, 1);
+    noteCall(tool.name, Buffer.byteLength(text), false);
+    return text;
+  } catch (e) {
+    noteCall(tool.name, 0, true); // a throw is a failed call
+    throw e;
+  }
+}
 
 // ------------------------------------------------------------ jsonrpc / mcp
 
@@ -764,20 +780,7 @@ async function handle(req) {
   if (method === 'ping') return {};
   if (method === 'tools/list')
     return { tools: tools.map(({ name, description, inputSchema, _meta }) => ({ name, description, inputSchema, _meta })) };
-  if (method === 'tools/call') {
-    const tool = byName.get(params?.name);
-    if (!tool) throw new Error(`Unknown tool: ${params?.name}`);
-    let text;
-    try {
-      const result = await tool.handler(params.arguments || {});
-      text = typeof result === 'string' ? result : JSON.stringify(result, null, 1);
-      noteCall(tool.name, Buffer.byteLength(text), false);
-    } catch (e) {
-      noteCall(tool.name, 0, true); // the ledger the dashboard grades; a throw is a failed call
-      throw e;
-    }
-    return { content: [{ type: 'text', text }] };
-  }
+  if (method === 'tools/call') return { content: [{ type: 'text', text: await call(params?.name, params?.arguments) }] };
   if (method === 'resources/list') return { resources: [{ uri: DASH_URI, name: 't27 MCP dashboard', mimeType: DASH_MIME }] };
   if (method === 'resources/read') {
     if (params?.uri !== DASH_URI) throw new Error(`Unknown resource: ${params?.uri}`);
@@ -788,10 +791,20 @@ async function handle(req) {
   throw new Error(`Unknown method: ${method}`);
 }
 
+// Imported as a library (TRI CLAW mounts `tools` and calls `call`), the file serves nothing of its own: no stdio
+// loop, no health port, no watcher. Run as a program (node server.mjs, the npx bin), it is the MCP server.
+const main = (() => {
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+})();
+
 // The health endpoint is optional scaffolding shared with habr-mcp. A static
 // import made a missing sibling directory fatal to a server that does not
 // otherwise need it.
-if (process.env.T27_HEALTH_PORT) {
+if (main && process.env.T27_HEALTH_PORT) {
   import('../habr-mcp/health.mjs')
     .then(({ serveHealth }) =>
       serveHealth({ name: 't27-mcp', version: VERSION, port: Number(process.env.T27_HEALTH_PORT), tools, extra: { site: SITE } }),
@@ -801,10 +814,10 @@ if (process.env.T27_HEALTH_PORT) {
 
 // `--watch <specs-dir> [--port N]` replaces the stdio loop with the local hot-reload server (graph.mjs, README).
 const wi = process.argv.indexOf('--watch'), pi = process.argv.indexOf('--port');
-if (wi !== -1) {
+if (main && wi !== -1) {
   if (!process.argv[wi + 1]) throw new Error('--watch needs the specs directory of a checkout');
   GX.watch(R, process.argv[wi + 1], pi !== -1 ? Number(process.argv[pi + 1]) : 2727, specPath);
-} else createInterface({ input: process.stdin }).on('line', async (line) => {
+} else if (main) createInterface({ input: process.stdin }).on('line', async (line) => {
   if (!line.trim()) return;
   let req;
   try {
