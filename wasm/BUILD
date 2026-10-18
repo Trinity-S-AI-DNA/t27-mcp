@@ -309,3 +309,30 @@ sha256
   e1ed2d440b9040af4ca75b7d872f0f44ec395b14748b03209d8e99b7d893fa5c  telegram.t27 (source)
   a753d9e6da1d2a18d7a273f60a6fa1cdabcbe112f6a3aef7aeb3e780dbc7ddb8  telegram.wasm
   3046ca0d0042da073a06ec6551a06ace5890075d8c2fb050a0144541b380e9b2  telegram_table.mjs
+
+t27_paper_claims (gHashTag/t27 specs/numeric/paper_claims.t27)
+
+  paper_claims.wasm       generated from specs/numeric/paper_claims.t27 (module NumericPaperClaims)
+                          by the C route: row_verdict(u32) -> u32, row_recomputed(u32) -> u64 and
+                          count_verdict(u32, u32) -> u32. All arithmetic is exact u64 integers.
+  paper_claims_table.mjs  generated: t27c gen-js specs/numeric/paper_claims.t27 (PAPERS, VERDICTS,
+                          NONE, ROWS and the row tables CL_PAPER, CL_WHERE, CL_TEXT, CL_KIND,
+                          CL_ARG, CL_PRINTED, CL_UNIT, CL_DEC)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/numeric/paper_claims.t27 > paper_claims.c
+  t27c gen-js specs/numeric/paper_claims.t27 > paper_claims_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=row_verdict -Wl,--export=row_recomputed -Wl,--export=count_verdict \
+      -o paper_claims.wasm paper_claims.c
+
+The tool recomputes 45 numbers printed in arXiv:2606.05017v5 (GoldenFloat), arXiv:2606.09686v3
+(Golden Ruler), the TNF paper, and 2 sums over the repo's own format tables: 34 fit, 8 do not
+fit, 3 not checkable. t27c 0.5.2, zig 0.16.0. paper_claims.t27: 10 of 10 tests pass, 0 vacuous
+(t27c test-report on the lab; the t27b JIT is arm64-only and was not run there).
+
+sha256
+  1e4aa0388afe5aa9388babbaac07cdeccb9e3341c04a90ba791c88a547adb71f  paper_claims.t27 (source)
+  4dd53304b17ce5af0081bcad5c5268c6ee7c7ac00af789043116a856dee1577f  paper_claims_table.mjs
+  4272a6afb6f8079edfe2e77da95f72b1dd7dcd04d96c2ac409ed1aa04c3b83ed  paper_claims.wasm

@@ -26,6 +26,17 @@ import * as GX from './graph.mjs';
 import { find } from './find.mjs';
 import { dashboard, note as noteCall } from './dashboard.mjs';
 import { tgTools } from './telegram.mjs';
+import * as PC from './wasm/paper_claims_table.mjs';
+
+// specs/numeric/paper_claims.t27 built by the C route (wasm/BUILD); loaded on the first t27_paper_claims call.
+let pcWasm = null;
+function paperClaimsWasm() {
+  if (!pcWasm) {
+    pcWasm = new WebAssembly.Instance(new WebAssembly.Module(readFileSync(new URL('./wasm/paper_claims.wasm', import.meta.url))), {}).exports;
+    pcWasm._initialize();
+  }
+  return pcWasm;
+}
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -644,6 +655,38 @@ const tools = [
       'Short, compiler-checked worked examples of .t27 idioms, cut from the published corpus at a pinned commit (at most 40 lines each). topic: clocked, comb, fn, test, or reset (async, sync, none). Use it before writing a clocked or combinational module, a test block or a reset; an unknown topic returns the list of topics.',
     inputSchema: { type: 'object', properties: { topic: { type: 'string', description: 'e.g. "clocked counter", "comb", "fn", "test", "async reset", "no reset"' }, fresh: { type: 'boolean' } }, required: ['topic'] },
     handler: ({ topic, fresh }) => examples(String(topic ?? ''), (pin, path) => getText(`${RAW}/${pin}/${path}`, fresh)),
+  },
+  {
+    name: 't27_paper_claims',
+    description:
+      'Which numbers printed in three papers about our number formats recompute to the printed value: GoldenFloat (arXiv:2606.05017v5), the Golden Ruler catalog (arXiv:2606.09686v3) and the TNF paper (GF, GF-T, BNF, TNF families), plus two checks of the repo format specs. Every row is recomputed by exact integer arithmetic in specs/numeric/paper_claims.t27 (built to wasm/paper_claims.wasm; `tri papers` runs the same spec). verdict is fits, does not fit, or not checkable (a testbench run or a measurement the spec cannot redo). paper: gf, ruler, tnf, repo or all; verdict: fits, misfit, unchecked or all.',
+    inputSchema: { type: 'object', properties: {
+      paper: { type: 'string', description: 'gf, ruler, tnf, repo or all (default all)' },
+      verdict: { type: 'string', description: 'fits, misfit, unchecked or all (default all)' },
+    } },
+    handler: ({ paper, verdict }) => {
+      // The verdicts are answers of the spec's row_verdict / row_recomputed / count_verdict; this only prints them.
+      const pick = (v, names) => { const k = names.indexOf(String(v ?? 'all').toLowerCase()); if (k < 0) throw new Error(`expected one of ${names.join(', ')}`); return k; };
+      const p = pick(paper, ['all', 'gf', 'ruler', 'tnf', 'repo']), want = pick(verdict, ['all', 'fits', 'misfit', 'unchecked']);
+      const W = paperClaimsWasm(), S = PC;
+      const show = (v, u, d) => {
+        if (v === S.NONE) return 'none';
+        if (u === S.U_HEX) return `0x${v.toString(16).toUpperCase()}`;
+        if (u === S.U_SCI3) { const m = Math.floor(v / 1000); return `${Math.floor(m / 100)}.${String(m % 100).padStart(2, '0')}e-${v % 1000}`; }
+        const t = d ? `${Math.floor(v / 10 ** d)}.${String(v % 10 ** d).padStart(d, '0')}` : String(v);
+        return u === S.U_PCT ? `${t}%` : t;
+      };
+      const rows = [];
+      for (let i = 0; i < S.ROWS; i++) {
+        const v = W.row_verdict(i) >>> 0;
+        if ((p && S.CL_PAPER[i] !== p) || (want && v !== want)) continue;
+        const u = S.CL_UNIT[i], d = S.CL_DEC[i];
+        rows.push({ row: i, paper: S.PAPERS[S.CL_PAPER[i]], where: S.CL_WHERE[i], claim: S.CL_TEXT[i],
+          printed: show(S.CL_PRINTED[i], u, d), recomputed: v === S.V_UNCHECKED ? null : show(Number(W.row_recomputed(i)), u, d), verdict: S.VERDICTS[v] });
+      }
+      const totals = Object.fromEntries([1, 2, 3].map((k) => [S.VERDICTS[k], W.count_verdict(p, k) >>> 0]));
+      return { spec: 'specs/numeric/paper_claims.t27', totals, rows };
+    },
   },
   {
     name: 't27_find',

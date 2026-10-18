@@ -123,6 +123,16 @@ const run = async () => {
   check('t27_examples keeps async apart from sync', ex2.topic === 'reset_async' && (await call('t27_examples', { topic: 'sync reset' })).topic === 'reset_sync');
   const ex3 = await call('t27_examples', { topic: 'axi4 burst' });
 
+  // t27_paper_claims: every verdict is row_verdict of specs/numeric/paper_claims.t27, run as wasm.
+  const pc = await call('t27_paper_claims');
+  check('t27_paper_claims: 45 claims, 34 fit, 8 do not, 3 not checkable', pc.rows?.length === 45 && pc.totals?.fits === 34 && pc.totals?.['does not fit'] === 8 && pc.totals?.['not checkable'] === 3, JSON.stringify(pc.totals));
+  const pcr = await call('t27_paper_claims', { paper: 'ruler', verdict: 'misfit' });
+  check('t27_paper_claims: the Golden Ruler prints 12 clusters, the catalog has 13', pcr.rows?.length === 1 && pcr.rows[0].printed === '12' && pcr.rows[0].recomputed === '13', JSON.stringify(pcr.rows?.[0]));
+  const pct = await call('t27_paper_claims', { paper: 'tnf', verdict: 'misfit' });
+  check('t27_paper_claims: TNF prints kappa ratio 1.683, exact arithmetic gives 1.682', pct.rows?.length === 7 && pct.rows.some((r) => r.printed === '1.683' && r.recomputed === '1.682'), pct.rows?.length);
+  const pcs = await call('t27_paper_claims', { paper: 'tnf' });
+  check('t27_paper_claims: the paper filter keeps the 23 TNF rows, 15 of them fit', pcs.rows?.length === 23 && pcs.totals?.fits === 15, JSON.stringify(pcs.totals));
+
   // t27_find: ranking is specs/t27mcp/find.t27; a below-threshold intent is an honest miss.
   const fd = await call('t27_find', { intent: 'clocked counter' });
   check('t27_find returns the clocked counter spec', fd.hits?.some((h) => h.path === 'specs/ternary/clocked_counter.t27') && fd.hits.every((h) => h.next), fd.hits?.length);
