@@ -333,6 +333,6 @@ fit, 3 not checkable. t27c 0.5.2, zig 0.16.0. paper_claims.t27: 10 of 10 tests p
 (t27c test-report on the lab; the t27b JIT is arm64-only and was not run there).
 
 sha256
-  a2b87f865588d09201b7ec722d250ed48772e7b76ba5f5d5cf0749ffd7952c6d  paper_claims.t27 (source)
-  5a9bd6ac888bba53f218ec19e230c1c01852a00b73d1421f06a212587850de8d  paper_claims_table.mjs
+  1e4aa0388afe5aa9388babbaac07cdeccb9e3341c04a90ba791c88a547adb71f  paper_claims.t27 (source)
+  4dd53304b17ce5af0081bcad5c5268c6ee7c7ac00af789043116a856dee1577f  paper_claims_table.mjs
   4272a6afb6f8079edfe2e77da95f72b1dd7dcd04d96c2ac409ed1aa04c3b83ed  paper_claims.wasm
