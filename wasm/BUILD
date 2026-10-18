@@ -235,3 +235,33 @@ sha256
   bc104b21cd349cc1d0674cca55d778eed3fafabc8d1a9a27f9b81c82a26c947f  find.t27 (source)
   51043849996d40633099f1f2b6d9960f6eccea2b7e8f21031265965c5656ff1d  find_table.mjs
   82b64bde50ec3ec42729b1d88b7b41525372c5fbcf39f02876bdb98a7e063e3a  find.wasm
+
+T27F hot reload (gHashTag/t27#10232, gHashTag/t27-mcp#15)
+
+  hot.wasm   generated from specs/t27f/hot.t27 (module T27fHot) by the C route: hot_decision(bool x4),
+             hot_wait_ms(u32, u32), hot_ready(u32, u32), hot_take(u32), hot_emits(u8, bool), hot_cache(u8),
+             hot_from_reuse(u8), digest_ok(u32), hot_key_len(). 490 bytes. gen-c inlines what hot.t27
+             uses from verified::reuse, verified::seal_identity and verified::watch.
+  hot.mjs    generated: t27c gen-js specs/t27f/hot.t27 (KEY_SEP, HOT_* codes, HOT_EVENT, HOT_FIELDS,
+             HOT_DECISION_NAMES, HOT_CACHE_NAMES, and the constants it imports)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27f/hot.t27 > hot.c
+  t27c gen-js specs/t27f/hot.t27 > hot.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=hot_decision -Wl,--export=hot_wait_ms -Wl,--export=hot_ready -Wl,--export=hot_take \
+      -Wl,--export=hot_emits -Wl,--export=hot_cache -Wl,--export=hot_from_reuse -Wl,--export=digest_ok \
+      -Wl,--export=hot_key_len -o hot.wasm hot.c
+
+A caller runs `_initialize()` once. ../graph.mjs hashes the spec bytes and wasm/t27f.wasm (sha256, hex),
+asks hot_decision whether the last export of a path is reusable, and keeps results while it says so; it holds
+no time limit and no rule. t27c 0.5.2, zig 0.16.0, gHashTag/t27 fdb6b28dd plus PR #10235 (hot.t27 not on
+master at build time). hot.t27: 11 of 11 tests pass, 3 invariants, 0 vacuous; negative controls: inverting
+the replay branch of hot_emits fails a test, raising the transport allowance to 90 ms stops the budget
+invariant from compiling.
+
+sha256
+  a2ea398b37bd4d85e279b69a7e3d12d7944a2f849a2d231db24973f5731d557b  hot.t27 (source)
+  3e03cf2d4e9bd5c7ec5452b9434e26c9ff7b9aaeada9ea0979f77f727c0474b8  hot.mjs
+  e271aa16b9b7afd9f79dac114bd043be957658f108f4a0a6438f6c074033b32a  hot.wasm
