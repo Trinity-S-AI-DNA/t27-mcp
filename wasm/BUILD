@@ -308,3 +308,29 @@ sha256
   3d7957837be8ac3de14b18ce1c0ecdde805f3f71d4d801b62d476b2e82f4a1ae  service.t27 (source, t27 #10484 @ 34acfcb1c)
   e1807a3b6568e974f7af59ca7b9e0a7dc4b2431e215709bbfd37f2bbf49e08e4  service.wasm
   e371cfea58e4317947bcb1655253e6840ead69042425ac598f07cba16caa4fd5  service_table.mjs
+
+Visual output: every answer that explains a spec, a flow, numbers or a piece of work carries one visual, by host,
+readable inline or redrawn (spec in gHashTag/t27#10504)
+  visual_output.wasm        generated from specs/t27mcp/visual_output.t27 (module T27mcpVisualOutput) by the C route:
+                            needs_visual, answer_channel, inline_readable, inline_source, answer_verdict
+  visual_output_table.mjs   generated: t27c gen-js specs/t27mcp/visual_output.t27 (hosts, channels, answer kinds,
+                            INLINE_W, MIN_FONT_PX, INLINE_MAX_BYTES, verdicts, RULE_CLAUDE_CODE, RULE_TRI_CLAW)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/visual_output.t27 > visual_output.c
+  t27c gen-js specs/t27mcp/visual_output.t27 > visual_output_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=needs_visual -Wl,--export=answer_channel -Wl,--export=inline_readable \
+      -Wl,--export=inline_source -Wl,--export=answer_verdict -o visual_output.wasm visual_output.c
+
+../visual.mjs measures an SVG (viewBox width, smallest font-size, bytes) and calls the wasm. server.mjs sends
+RULE_CLAUDE_CODE as the initialize result's `instructions`, which Claude Code puts in the model's system prompt,
+and t27f_view and t27f_graph print inline_source's answer under the path. TRI CLAW imports visual.mjs for
+RULE_TRI_CLAW. t27c 0.5.2, zig 0.16.0. visual_output.t27: 9 of 9 tests pass, 0 vacuous; a mutant readability
+rule (font_px >= 11, the width ignored) fails 3.
+
+sha256
+  06c1c5e73142e2f79fa5d7be037eace63c1f20597a6e33274ebf8e1b428b7584  visual_output.t27 (source, t27 #10504)
+  bf77b6d2c32f956e6a7d7a88b6d9685830021afeae5035fa1f7a7a284cec80b1  visual_output.wasm
+  a51bd1d499f81e31f1015319afb563fc658ae60530c586e319ae8868781a02ae  visual_output_table.mjs
