@@ -282,11 +282,13 @@ sha256
   450af040b0c32dbd596498089cfd50ff75e8eb613efe63a440070fbf58c10798  dashboard.wasm
   5db0db9569d38a704674f0950fd66e7b63c5029fb900b555f1c86cb741e9944e  dashboard_table.mjs
 
-tg_whoami, tg_dialogs, tg_unread, tg_messages, tg_search (epic gHashTag/t27#10066)
+tg_unanswered, tg_dialogs, tg_history, tg_search, tg_contacts, tg_participants, tg_scheduled
+(epic gHashTag/t27#10066)
   telegram.wasm         generated from specs/t27mcp/telegram.t27 (module T27mcpTelegram) by the C
                         route: limit_for, chat_ok, query_ok, outcome
-  telegram_table.mjs    generated: t27c gen-js specs/t27mcp/telegram.t27 (tool names, tg commands,
-                        argument kinds, descriptions, outcome texts, FOREIGN_TEXT, SEND_TEXT)
+  telegram_table.mjs    generated: t27c gen-js specs/t27mcp/telegram.t27 (tool names, argument kinds,
+                        limit flags, descriptions, the app address and env names, outcome texts,
+                        FOREIGN_TEXT, SEND_TEXT)
 
 Rebuild on the Railway lab, never on the owner's Mac:
 
@@ -296,16 +298,14 @@ Rebuild on the Railway lab, never on the owner's Mac:
       -Wl,--export=limit_for -Wl,--export=chat_ok -Wl,--export=query_ok \
       -Wl,--export=outcome -o telegram.wasm telegram.c
 
-../telegram.mjs spawns the owner's tg CLI (gHashTag/agent-telegram, read only by construction, session
-in the macOS Keychain) with the argument list the wasm accepted, and maps its run to an outcome the
-wasm names. t27c 0.5.2, zig 0.16.0, gHashTag/t27 3c89b007c (telegram.t27 not on master at build time).
-telegram.t27: 8 of 8 tests pass, 0 vacuous. Negative controls, each caught (1 failing test each): no
-limit cap; a 21-digit id accepted; a 4-character username accepted; a stray character ignored; a
-leading minus not allowed for; a missing session checked only on a non-zero exit; an empty query
-accepted. A first run also showed `if (minus) return false` in chat_ok was dead code (its mutant
-survived: a minus is not a word character), so it was removed.
+../telegram.mjs forwards a read call the wasm accepted to the owner's VIBEE app (vibee-render, POST /mcp,
+X-Agent-Key from VIBEE_AGENT_KEY), which holds the logged-in Telegram session, and maps the HTTP status
+and JSON-RPC reply to an outcome the wasm names. t27c 0.5.2 (built from gHashTag/t27 master), zig 0.16.0.
+telegram.t27: 9 of 9 tests pass, 0 vacuous. Negative controls, each caught (1 failing test each): no
+limit cap; the key not checked; no answer not named; a 200 carrying a JSON-RPC error taken as ok; 401
+not denied; 403 not denied; a 5xx not failed; a 21-digit id accepted; a 201-character query accepted.
 
 sha256
-  518e684264cc664dcf0460b9bcf2cd34147e7aff74705c58b192f5870f59841e  telegram.t27 (source)
-  c6875f2c2478bbb14794b01ae375b8e8cc637f5f3f380035e9e77d7a4d2da534  telegram.wasm
-  c7dc7bdc4cd595f5fae1abea6d0b1b8ce4178e302c5e06a6074ad48dd20c65c6  telegram_table.mjs
+  029f8039cb9d2dfe581daea7ee2e0b480e74a65f446d10ca39f728fd4443cbe7  telegram.t27 (source)
+  a753d9e6da1d2a18d7a273f60a6fa1cdabcbe112f6a3aef7aeb3e780dbc7ddb8  telegram.wasm
+  6a18cffcde0996ba56b677d90ebea8b967550e5bc91b976fab8d8e92525184a6  telegram_table.mjs
