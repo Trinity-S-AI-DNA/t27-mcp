@@ -25,6 +25,7 @@ import { brief, one, failureReasons } from './brief.mjs';
 import * as GX from './graph.mjs';
 import { find } from './find.mjs';
 import { dashboard, note as noteCall } from './dashboard.mjs';
+import { tgTools } from './telegram.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -744,6 +745,7 @@ const tools = [
     _meta: { ui: { resourceUri: DASH_URI } },
     handler: async () => (await dash()).text,
   },
+  ...tgTools,
 ];
 
 const byName = new Map(tools.map((t) => [t.name, t]));
