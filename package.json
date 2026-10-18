@@ -5,7 +5,7 @@
   "type": "module",
   "bin": { "t27-mcp": "./server.mjs" },
   "main": "server.mjs",
-  "files": ["server.mjs", "check.mjs", "examples.mjs", "brief.mjs", "deck-view.mjs", "wasm/explorer.wasm", "wasm/check_hints.wasm", "wasm/check_hints.mjs", "wasm/examples.wasm", "wasm/examples_table.mjs", "wasm/spec_brief.wasm", "wasm/spec_brief.mjs", "wasm/t27f.wasm", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
+  "files": ["server.mjs", "graph.mjs", "check.mjs", "examples.mjs", "brief.mjs", "deck-view.mjs", "wasm/explorer.wasm", "wasm/check_hints.wasm", "wasm/check_hints.mjs", "wasm/examples.wasm", "wasm/examples_table.mjs", "wasm/spec_brief.wasm", "wasm/spec_brief.mjs", "wasm/t27f.wasm", "wasm/spec_graph_view.mjs", "wasm/spec_graph_export.mjs", "wasm/spec_graph_outline.mjs", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.mjs",
