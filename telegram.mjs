@@ -1,6 +1,6 @@
 // tg_* glue. wasm/telegram.wasm (specs/t27mcp/telegram.t27) checks the arguments and names the outcome of each call;
 // wasm/telegram_table.mjs holds the tool names, descriptions, the app address and the texts. The owner's account is read
-// through the owner's VIBEE app (vibee-render), which holds the logged-in session; this file forwards the call to its /mcp.
+// through the owner's TRI CLAW (service vibee-render), which holds the logged-in session; this file forwards the call to its /mcp.
 import { readFileSync } from 'node:fs';
 import * as S from './wasm/telegram_table.mjs';
 

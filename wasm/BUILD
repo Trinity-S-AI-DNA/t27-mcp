@@ -298,7 +298,7 @@ Rebuild on the Railway lab, never on the owner's Mac:
       -Wl,--export=limit_for -Wl,--export=chat_ok -Wl,--export=query_ok \
       -Wl,--export=outcome -o telegram.wasm telegram.c
 
-../telegram.mjs forwards a read call the wasm accepted to the owner's VIBEE app (vibee-render, POST /mcp,
+../telegram.mjs forwards a read call the wasm accepted to the owner's TRI CLAW (service vibee-render, POST /mcp,
 X-Agent-Key from VIBEE_AGENT_KEY), which holds the logged-in Telegram session, and maps the HTTP status
 and JSON-RPC reply to an outcome the wasm names. t27c 0.5.2 (built from gHashTag/t27 master), zig 0.16.0.
 telegram.t27: 9 of 9 tests pass, 0 vacuous. Negative controls, each caught (1 failing test each): no
@@ -306,6 +306,6 @@ limit cap; the key not checked; no answer not named; a 200 carrying a JSON-RPC e
 not denied; 403 not denied; a 5xx not failed; a 21-digit id accepted; a 201-character query accepted.
 
 sha256
-  029f8039cb9d2dfe581daea7ee2e0b480e74a65f446d10ca39f728fd4443cbe7  telegram.t27 (source)
+  e1ed2d440b9040af4ca75b7d872f0f44ec395b14748b03209d8e99b7d893fa5c  telegram.t27 (source)
   a753d9e6da1d2a18d7a273f60a6fa1cdabcbe112f6a3aef7aeb3e780dbc7ddb8  telegram.wasm
-  6a18cffcde0996ba56b677d90ebea8b967550e5bc91b976fab8d8e92525184a6  telegram_table.mjs
+  3046ca0d0042da073a06ec6551a06ace5890075d8c2fb050a0144541b380e9b2  telegram_table.mjs
