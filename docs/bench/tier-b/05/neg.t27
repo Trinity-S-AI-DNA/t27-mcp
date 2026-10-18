@@ -1,0 +1,60 @@
+module BenchTraffic;
+
+pub enum Light {
+    Red,
+    Green,
+    Yellow,
+}
+
+var cur : Light = Light.Red
+var spent : u8 = 0
+
+fn duration(l: Light) -> u8 {
+    return switch (l) {
+        .Red => 3,
+        .Green => 3,
+        .Yellow => 1,
+    };
+}
+
+fn next(l: Light) -> Light {
+    return switch (l) {
+        .Red => Light.Green,
+        .Green => Light.Yellow,
+        .Yellow => Light.Red,
+    };
+}
+
+fn reset() {
+    cur = Light.Red;
+    spent = 0;
+}
+
+fn current() -> Light {
+    return cur;
+}
+
+fn ticks_in_state() -> u8 {
+    return spent;
+}
+
+fn tick() {
+    spent = spent + 1;
+    if (spent == duration(cur)) {
+        cur = next(cur);
+        spent = 0;
+    }
+}
+
+test red_lasts_three {
+    reset();
+    tick();
+    tick();
+    assert(current() == Light.Red);
+    tick();
+    assert(current() == Light.Green);
+}
+test durations {
+    assert_eq(duration(Light.Red), 3);
+    assert_eq(duration(Light.Yellow), 1);
+}

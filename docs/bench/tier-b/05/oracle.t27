@@ -1,0 +1,54 @@
+test oracle_traffic_one_full_cycle {
+    reset();
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 0);
+    tick();
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 1);
+    tick();
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 2);
+    tick();
+    assert(current() == Light.Green);
+    assert_eq(ticks_in_state(), 0);
+    tick();
+    assert(current() == Light.Green);
+    tick();
+    assert(current() == Light.Yellow);
+    tick();
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 0);
+}
+test oracle_traffic_second_cycle_and_reset {
+    reset();
+    var i : u8 = 0;
+    while (i < 8) {
+        tick();
+        i = i + 1;
+    }
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 2);
+    tick();
+    assert(current() == Light.Green);
+    reset();
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 0);
+}
+test oracle_traffic_pure_functions {
+    assert(next(Light.Red) == Light.Green);
+    assert(next(Light.Green) == Light.Yellow);
+    assert(next(Light.Yellow) == Light.Red);
+    assert_eq(duration(Light.Red), 3);
+    assert_eq(duration(Light.Green), 2);
+    assert_eq(duration(Light.Yellow), 1);
+}
+test oracle_traffic_period_is_six {
+    reset();
+    var i : u8 = 0;
+    while (i < 30) {
+        tick();
+        i = i + 1;
+    }
+    assert(current() == Light.Red);
+    assert_eq(ticks_in_state(), 0);
+}

@@ -1,0 +1,58 @@
+module BenchVec2;
+
+pub struct Vec2 {
+    x: i16,
+    y: i16,
+}
+
+fn add(a: Vec2, b: Vec2) -> Vec2 {
+    return Vec2 { x: a.x + b.x, y: a.y + b.y };
+}
+
+fn sub(a: Vec2, b: Vec2) -> Vec2 {
+    return Vec2 { x: a.x - b.x, y: a.y - b.y };
+}
+
+fn scale(a: Vec2, k: i16) -> Vec2 {
+    return Vec2 { x: a.x * k, y: a.y * k };
+}
+
+fn dot(a: Vec2, b: Vec2) -> i16 {
+    return a.x * b.x + a.y * b.y;
+}
+
+fn cross(a: Vec2, b: Vec2) -> i16 {
+    return a.x * b.y - a.y * b.x;
+}
+
+fn abs16(v: i16) -> i16 {
+    if (v < 0) {
+        return 0 - v;
+    }
+    return v;
+}
+
+fn norm1(a: Vec2) -> i16 {
+    return a.x + a.y;
+}
+
+fn is_zero(a: Vec2) -> bool {
+    return a.x == 0 and a.y == 0;
+}
+
+test add_sub {
+    let p : Vec2 = Vec2 { x: 3, y: -4 };
+    let q : Vec2 = Vec2 { x: -1, y: 10 };
+    let s : Vec2 = add(p, q);
+    assert_eq(s.x, 2);
+    assert_eq(s.y, 6);
+    let d : Vec2 = sub(p, q);
+    assert_eq(d.x, 4);
+    assert_eq(d.y, -14);
+}
+test dot_cross {
+    let p : Vec2 = Vec2 { x: 1, y: 2 };
+    let q : Vec2 = Vec2 { x: 3, y: 4 };
+    assert_eq(dot(p, q), 11);
+    assert_eq(cross(p, q), -2);
+}

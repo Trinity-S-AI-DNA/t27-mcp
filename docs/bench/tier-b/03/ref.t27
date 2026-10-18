@@ -1,0 +1,78 @@
+module BenchSort6;
+
+var arr : [6]i16 = [0, 0, 0, 0, 0, 0]
+
+fn reset() {
+    var i : u8 = 0;
+    while (i < 6) {
+        arr[i] = 0;
+        i = i + 1;
+    }
+}
+
+fn set(i: u8, v: i16) {
+    arr[i] = v;
+}
+
+fn get(i: u8) -> i16 {
+    return arr[i];
+}
+
+fn sort() {
+    var i : u8 = 1;
+    while (i < 6) {
+        var j : u8 = i;
+        while (j > 0 and arr[j - 1] > arr[j]) {
+            let t : i16 = arr[j];
+            arr[j] = arr[j - 1];
+            arr[j - 1] = t;
+            j = j - 1;
+        }
+        i = i + 1;
+    }
+}
+
+fn is_sorted() -> bool {
+    var i : u8 = 1;
+    while (i < 6) {
+        if (arr[i - 1] > arr[i]) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+fn median_low() -> i16 {
+    var copy : [6]i16 = [arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]];
+    var i : u8 = 1;
+    while (i < 6) {
+        var j : u8 = i;
+        while (j > 0 and copy[j - 1] > copy[j]) {
+            let t : i16 = copy[j];
+            copy[j] = copy[j - 1];
+            copy[j - 1] = t;
+            j = j - 1;
+        }
+        i = i + 1;
+    }
+    return copy[2];
+}
+
+test sorts_with_negatives {
+    reset();
+    set(0, 5);
+    set(1, -3);
+    set(2, 9);
+    set(3, 0);
+    set(4, -8);
+    set(5, 2);
+    sort();
+    assert_eq(get(0), -8);
+    assert_eq(get(5), 9);
+    assert(is_sorted());
+}
+test fresh_array_is_sorted {
+    reset();
+    assert(is_sorted());
+}

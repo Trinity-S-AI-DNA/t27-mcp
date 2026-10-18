@@ -1,0 +1,97 @@
+module BenchBank;
+
+pub struct Acct {
+    bal: i32,
+    frozen: bool,
+}
+
+pub enum Res {
+    Ok,
+    NoAccount,
+    SameAccount,
+    Frozen,
+    Insufficient,
+}
+
+var accts : [4]Acct = [Acct { bal: 0, frozen: false }, Acct { bal: 0, frozen: false }, Acct { bal: 0, frozen: false }, Acct { bal: 0, frozen: false }]
+
+fn reset() {
+    var i : u8 = 0;
+    while (i < 4) {
+        accts[i].bal = 0;
+        accts[i].frozen = false;
+        i = i + 1;
+    }
+}
+
+fn balance(i: u8) -> i32 {
+    return accts[i].bal;
+}
+
+fn freeze(i: u8) {
+    accts[i].frozen = true;
+}
+
+fn unfreeze(i: u8) {
+    accts[i].frozen = false;
+}
+
+fn deposit(i: u8, n: i32) -> Res {
+    if (i >= 4) {
+        return Res.NoAccount;
+    }
+    if (accts[i].frozen) {
+        return Res.Frozen;
+    }
+    accts[i].bal = accts[i].bal + n;
+    return Res.Ok;
+}
+
+fn withdraw(i: u8, n: i32) -> Res {
+    if (i >= 4) {
+        return Res.NoAccount;
+    }
+    if (accts[i].frozen) {
+        return Res.Frozen;
+    }
+    if (accts[i].bal <= n) {
+        return Res.Insufficient;
+    }
+    accts[i].bal = accts[i].bal - n;
+    return Res.Ok;
+}
+
+fn transfer(from: u8, to: u8, n: i32) -> Res {
+    if (from >= 4 or to >= 4) {
+        return Res.NoAccount;
+    }
+    if (from == to) {
+        return Res.SameAccount;
+    }
+    if (accts[from].frozen or accts[to].frozen) {
+        return Res.Frozen;
+    }
+    if (accts[from].bal < n) {
+        return Res.Insufficient;
+    }
+    accts[from].bal = accts[from].bal - n;
+    accts[to].bal = accts[to].bal + n;
+    return Res.Ok;
+}
+
+fn total() -> i32 {
+    return accts[0].bal + accts[1].bal + accts[2].bal + accts[3].bal;
+}
+
+test deposit_withdraw {
+    reset();
+    assert(deposit(1, 50) == Res.Ok);
+    assert(withdraw(1, 20) == Res.Ok);
+    assert_eq(balance(1), 30);
+}
+test short_withdraw_changes_nothing {
+    reset();
+    assert(deposit(0, 10) == Res.Ok);
+    assert(withdraw(0, 11) == Res.Insufficient);
+    assert_eq(balance(0), 10);
+}

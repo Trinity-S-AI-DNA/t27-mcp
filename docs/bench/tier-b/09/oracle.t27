@@ -1,0 +1,60 @@
+test oracle_hist_bucket_edges {
+    reset();
+    add(0);
+    add(31);
+    add(32);
+    add(63);
+    add(64);
+    add(223);
+    add(224);
+    add(255);
+    assert_eq(count(0), 2);
+    assert_eq(count(1), 2);
+    assert_eq(count(2), 1);
+    assert_eq(count(6), 1);
+    assert_eq(count(7), 2);
+    assert_eq(count(3), 0);
+    assert_eq(total(), 8);
+    assert_eq(nonempty(), 5);
+}
+test oracle_hist_saturates_at_255 {
+    reset();
+    var i : u16 = 0;
+    while (i < 300) {
+        add(100);
+        i = i + 1;
+    }
+    assert_eq(count(3), 255);
+    assert_eq(total(), 255);
+    add(130);
+    add(130);
+    assert_eq(count(4), 2);
+    assert_eq(total(), 257);
+    assert_eq(peak(), 3);
+}
+test oracle_hist_peak_ties_take_lowest {
+    reset();
+    assert_eq(peak(), 0);
+    assert_eq(nonempty(), 0);
+    add(200);
+    add(40);
+    assert_eq(peak(), 1);
+    add(200);
+    assert_eq(peak(), 6);
+    add(40);
+    assert_eq(peak(), 1);
+    add(40);
+    assert_eq(peak(), 1);
+    assert_eq(total(), 5);
+}
+test oracle_hist_reset_clears_everything {
+    reset();
+    add(255);
+    add(1);
+    add(129);
+    reset();
+    assert_eq(total(), 0);
+    assert_eq(nonempty(), 0);
+    assert_eq(count(7), 0);
+    assert_eq(peak(), 0);
+}

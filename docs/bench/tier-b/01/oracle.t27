@@ -1,0 +1,43 @@
+test oracle_stack_fill_and_overflow {
+    reset();
+    var i : u8 = 0;
+    while (i < 8) {
+        assert(push(0 - 100 - (i as i16)));
+        i = i + 1;
+    }
+    assert(is_full());
+    assert_eq(depth(), 8);
+    assert(!push(5));
+    assert_eq(depth(), 8);
+    assert_eq(peek(), -107);
+}
+test oracle_stack_pop_order_and_empty {
+    reset();
+    assert(push(300));
+    assert(push(-300));
+    assert(push(32767));
+    assert_eq(peek(), 32767);
+    assert_eq(pop(), 32767);
+    assert_eq(pop(), -300);
+    assert_eq(depth(), 1);
+    assert_eq(pop(), 300);
+    assert_eq(pop(), 0);
+    assert_eq(peek(), 0);
+    assert_eq(depth(), 0);
+    assert(!is_full());
+}
+test oracle_stack_refill_after_overflow {
+    reset();
+    var i : u8 = 0;
+    while (i < 9) {
+        push(i as i16);
+        i = i + 1;
+    }
+    assert_eq(pop(), 7);
+    assert(!is_full());
+    assert(push(-1));
+    assert_eq(peek(), -1);
+    reset();
+    assert_eq(depth(), 0);
+    assert_eq(peek(), 0);
+}

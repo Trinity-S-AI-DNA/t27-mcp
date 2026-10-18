@@ -1,0 +1,41 @@
+test oracle_window_partial_fill_counts_zero {
+    reset();
+    add(-5);
+    assert_eq(sum(), -5);
+    assert_eq(max4(), 0);
+    assert_eq(min4(), -5);
+    add(7);
+    assert_eq(max4(), 7);
+    assert_eq(min4(), -5);
+}
+test oracle_window_all_negative_full {
+    reset();
+    add(-3);
+    add(-9);
+    add(-1);
+    add(-4);
+    assert_eq(sum(), -17);
+    assert_eq(max4(), -1);
+    assert_eq(min4(), -9);
+}
+test oracle_window_wraps_twice {
+    reset();
+    var i : u8 = 1;
+    while (i <= 10) {
+        add((i as i16) * 10 - 55);
+        i = i + 1;
+    }
+    assert_eq(sum(), 120);
+    assert_eq(max4(), 45);
+    assert_eq(min4(), 15);
+}
+test oracle_window_reset_clears {
+    reset();
+    add(100);
+    add(200);
+    reset();
+    assert_eq(sum(), 0);
+    assert_eq(max4(), 0);
+    add(-2);
+    assert_eq(min4(), -2);
+}
