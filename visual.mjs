@@ -15,6 +15,12 @@ export const ruleTriClaw = T.RULE_TRI_CLAW.join('\n');
 export const needsVisual = (kind) => !!W.needs_visual(kind);
 export const answerChannel = (host, inlineTool, svg) => W.answer_channel(host, +!!inlineTool, +!!svg);
 
+// The MCP Apps resource: the host a client is from its initialize capabilities, whether a t27f result carries its
+// drawing as a ui:// resource there, and the page around the SVG (title escaped by the caller).
+export const clientHost = (caps) => { const x = caps?.extensions?.[T.UI_EXTENSION]; return W.client_host(+!!x, +!!x?.mimeTypes?.includes?.(T.UI_MIME)); };
+export const carriesUi = (host) => !!W.carries_ui_resource(host, 1);
+export const uiPage = (title, svg) => T.UI_PAGE[0] + title + T.UI_PAGE[1] + svg + T.UI_PAGE[2];
+
 // The line a t27f tool prints under its path. No font-size in the SVG reads as 0 px: never embedded.
 export const inlineNote = (svg) => {
   const w = Number(/viewBox="0 0 (\d+)/.exec(svg)?.[1] ?? 0), b = Buffer.byteLength(svg);

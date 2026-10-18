@@ -26,6 +26,12 @@ export const K_QUESTION = 5;
 export const INLINE_W = 680;
 export const MIN_FONT_PX = 11;
 export const INLINE_MAX_BYTES = 16384;
+export const UI_EXTENSION = "io.modelcontextprotocol/ui";
+export const UI_MIME = "text/html;profile=mcp-app";
+export const UI_URI_VIEW = "ui://t27f/view";
+export const UI_URI_GRAPH = "ui://t27f/graph";
+export const UI_PAGE = ["<!doctype html><html><head><meta charset=utf-8><title>", "</title><style>body{margin:0;background:#000}svg{display:block;width:100%;height:auto}</style></head><body>", "</body></html>"];
+export const UI_EMPTY = "<!doctype html><html><head><meta charset=utf-8><title>t27f</title></head><body>No drawing yet: call the tool first.</body></html>";
 export const SRC_EMBED = 0;
 export const SRC_REDRAW = 1;
 export const LABEL_NAMES = ["exact", "derived", "suggested", "unknown"];
@@ -42,6 +48,8 @@ export const RULE_CLAUDE_CODE_LINES = 7;
 export const RULE_TRI_CLAW_LINES = 6;
 // t27c gen-js: fn needs_visual was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn answer_channel was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn client_host was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn carries_ui_resource was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn inline_readable was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn inline_source was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn answer_verdict was not emitted -- this backend lowers declarations, not bodies.
@@ -54,10 +62,13 @@ export const RULE_TRI_CLAW_LINES = 6;
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
+// t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
+// t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
+// t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 
 // Declaration order, which the spec's own laws depend on.
 export const __STRUCT_ORDER__ = [];
-export const __DECL_ORDER__ = ["HOST_CLAUDE_CODE_CLI", "HOST_CLAUDE_CODE_DESKTOP", "HOST_MCP_APPS", "HOST_SITE", "HOST_TRI_CLAW", "HOST_COUNT", "CH_FILE_PATH", "CH_FILE_AND_PANE", "CH_UI_RESOURCE", "CH_LIVE_PLAYER", "CH_INLINE_WIDGET", "CH_IMAGE_URL", "CH_MARKDOWN_TABLE", "CHANNEL_NAME", "K_SPEC", "K_FLOW", "K_NUMBERS", "K_REPORT", "K_ONE_SENTENCE", "K_QUESTION", "INLINE_W", "MIN_FONT_PX", "INLINE_MAX_BYTES", "SRC_EMBED", "SRC_REDRAW", "LABEL_NAMES", "V_OK", "V_NO_VISUAL", "V_INVENTED", "V_NO_LEGEND", "V_NO_SOURCE", "V_UNREADABLE", "VERDICT_TEXT", "RULE_CLAUDE_CODE", "RULE_TRI_CLAW", "RULE_CLAUDE_CODE_LINES", "RULE_TRI_CLAW_LINES"];
+export const __DECL_ORDER__ = ["HOST_CLAUDE_CODE_CLI", "HOST_CLAUDE_CODE_DESKTOP", "HOST_MCP_APPS", "HOST_SITE", "HOST_TRI_CLAW", "HOST_COUNT", "CH_FILE_PATH", "CH_FILE_AND_PANE", "CH_UI_RESOURCE", "CH_LIVE_PLAYER", "CH_INLINE_WIDGET", "CH_IMAGE_URL", "CH_MARKDOWN_TABLE", "CHANNEL_NAME", "K_SPEC", "K_FLOW", "K_NUMBERS", "K_REPORT", "K_ONE_SENTENCE", "K_QUESTION", "INLINE_W", "MIN_FONT_PX", "INLINE_MAX_BYTES", "UI_EXTENSION", "UI_MIME", "UI_URI_VIEW", "UI_URI_GRAPH", "UI_PAGE", "UI_EMPTY", "SRC_EMBED", "SRC_REDRAW", "LABEL_NAMES", "V_OK", "V_NO_VISUAL", "V_INVENTED", "V_NO_LEGEND", "V_NO_SOURCE", "V_UNREADABLE", "VERDICT_TEXT", "RULE_CLAUDE_CODE", "RULE_TRI_CLAW", "RULE_CLAUDE_CODE_LINES", "RULE_TRI_CLAW_LINES"];
 
 // What this spec holds and this backend did not print. Empty is the whole
 // story most of the time; an entry here is a promise the artifact does not

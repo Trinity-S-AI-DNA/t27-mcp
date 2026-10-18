@@ -27,7 +27,7 @@ import * as GX from './graph.mjs';
 import { find } from './find.mjs';
 import { dashboard, note as noteCall } from './dashboard.mjs';
 import { localServes } from './service.mjs';
-import { ruleClaudeCode, inlineNote } from './visual.mjs';
+import { ruleClaudeCode, inlineNote, clientHost, carriesUi, uiPage, UI_MIME, UI_URI_VIEW, UI_URI_GRAPH, UI_EMPTY } from './visual.mjs';
 
 const VERSION = '1.2.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -195,6 +195,10 @@ const specPath = (p) => {
 };
 
 const DASH_URI = 'ui://t27/dashboard', DASH_MIME = 'text/html;profile=mcp-app';
+// Each t27f tool's latest drawing as a page, by its ui:// URI; `host` is what the client said it is at initialize
+// (specs/t27mcp/visual_output.t27 client_host, carries_ui_resource).
+const drawn = new Map();
+let peerHost = clientHost();
 // Exported for TRI CLAW, which mounts these tools into its own /mcp (service.mjs, specs/t27mcp/service.t27).
 export const tools = [
   {
@@ -658,7 +662,8 @@ export const tools = [
   {
     name: 't27f_view',
     description:
-      'Draw a still of the T27F demo reel (specs/t27f/reel.t27) as an SVG file and return its path. By default it is a presentation slide (specs/t27f/deck.t27); look 0 is the plain map. The Claude Code desktop app opens the path in its Browser pane; in a terminal, open the file yourself. The last line says whether to embed the SVG inline as it is or redraw it from t27f_outline rows (specs/t27mcp/visual_output.t27).',
+      'Draw a still of the T27F demo reel (specs/t27f/reel.t27) as an SVG file and return its path. By default it is a presentation slide (specs/t27f/deck.t27); look 0 is the plain map. The Claude Code desktop app opens the path in its Browser pane; in a terminal, open the file yourself. An MCP Apps host also gets the drawing as the ui://t27f/view resource. The last line says whether to embed the SVG inline as it is or redraw it from t27f_outline rows (specs/t27mcp/visual_output.t27).',
+    _meta: { ui: { resourceUri: UI_URI_VIEW } },
     inputSchema: { type: 'object', properties: {
       scene: { type: 'integer', description: 'Demo scene 0..4; its still frame is drawn (default 2, the focus still)' }, frame: { type: 'integer', description: 'Exact frame instead of a scene still' },
       preset: { type: 'integer', description: '0 wide 1280x720 (default), 1 square 1080x1080, 2 tall 1080x1920' }, out: { type: 'string', description: 'Output file (default: the temp directory)' },
@@ -686,6 +691,7 @@ export const tools = [
       const path = out || join(tmpdir(), `t27f-demo-f${f}-p${preset}-${look === deck.LOOK_DECK ? 'deck' : 'map'}.svg`);
       const doc = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif"><svg width="${W}" height="${H}">${svg.join('')}</svg></svg>\n`;
       writeFileSync(path, doc);
+      drawn.set(UI_URI_VIEW, uiPage(esc(cap), doc));
       return `${path}\nT27F demo reel, ${look === deck.LOOK_DECK ? `${['cover', 'stage', 'split'][R.layout_for(R.demo_kind(s))]} slide` : 'map'}, scene ${s} (${name}), frame ${f} of ${n}, ${W}x${H}, focus cell ${focus}; channel for host ${host}: ${ch}.\n${inlineNote(doc)}`;
     },
   },
@@ -699,7 +705,8 @@ export const tools = [
   {
     name: 't27f_graph',
     description:
-      "Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, name, inference label and source lines. With path, the graph is the exact-only export of that corpus spec (specs/t27f/spec_graph_export.t27: no derived edges; at most 192 nodes and 254 edges, a larger spec is refused, never truncated). With fixture, the hand-read tutorial 08 graph: 0 as is, 1 with a suggestion. path wins when both are given. The last line says whether to embed the SVG inline as it is or redraw it from t27f_outline rows (specs/t27mcp/visual_output.t27).",
+      "Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, name, inference label and source lines. With path, the graph is the exact-only export of that corpus spec (specs/t27f/spec_graph_export.t27: no derived edges; at most 192 nodes and 254 edges, a larger spec is refused, never truncated). With fixture, the hand-read tutorial 08 graph: 0 as is, 1 with a suggestion. path wins when both are given. An MCP Apps host also gets the drawing as the ui://t27f/graph resource. The last line says whether to embed the SVG inline as it is or redraw it from t27f_outline rows (specs/t27mcp/visual_output.t27).",
+    _meta: { ui: { resourceUri: UI_URI_GRAPH } },
     inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Exact corpus path, e.g. specs/tutorial/08_modules_and_arrays.t27' }, fixture: { type: 'integer', description: '0 tutorial 08 (default), 1 with a suggestion' }, out: { type: 'string', description: 'Output file (default: the temp directory)' }, fresh: { type: 'boolean' } } },
     handler: async ({ path, fixture = 0, out, fresh }) => {
       const src = path !== undefined ? await specSource(specPath(path), fresh) : undefined;
@@ -738,6 +745,7 @@ export const tools = [
       const { doc, note } = path !== undefined ? GX.memo(specPath(path), src, 'svg', build) : build();
       const file = out || join(tmpdir(), path !== undefined ? `t27f-graph-${path.replace(/[^A-Za-z0-9]+/g, '_')}.svg` : `t27f-graph-fx${fixture}.svg`);
       writeFileSync(file, doc);
+      drawn.set(UI_URI_GRAPH, uiPage(esc(note), doc));
       return `${file}\n${note}\n${inlineNote(doc)}`;
     },
   },
@@ -777,14 +785,22 @@ const dash = async () => dashboard(await manifest(false).catch((e) => ({ error: 
 
 async function handle(req) {
   const { method, params } = req;
-  if (method === 'initialize')
+  if (method === 'initialize') {
+    peerHost = clientHost(params?.capabilities);
     return { protocolVersion: '2024-11-05', capabilities: { tools: {}, resources: {} }, serverInfo: { name: 't27-mcp', version: VERSION }, instructions: ruleClaudeCode };
+  }
   if (method === 'ping') return {};
   if (method === 'tools/list')
     return { tools: tools.map(({ name, description, inputSchema, _meta }) => ({ name, description, inputSchema, _meta })) };
-  if (method === 'tools/call') return { content: [{ type: 'text', text: await call(params?.name, params?.arguments) }] };
-  if (method === 'resources/list') return { resources: [{ uri: DASH_URI, name: 't27 MCP dashboard', mimeType: DASH_MIME }] };
+  if (method === 'tools/call') {
+    const text = await call(params?.name, params?.arguments), uri = byName.get(params?.name)?._meta?.ui?.resourceUri;
+    const page = carriesUi(peerHost) && drawn.get(uri);
+    return { content: [{ type: 'text', text }, ...(page ? [{ type: 'resource', resource: { uri, mimeType: UI_MIME, text: page } }] : [])] };
+  }
+  if (method === 'resources/list')
+    return { resources: [{ uri: DASH_URI, name: 't27 MCP dashboard', mimeType: DASH_MIME }, ...[UI_URI_VIEW, UI_URI_GRAPH].map((uri) => ({ uri, name: `${uri.slice(5)}: latest drawing`, mimeType: UI_MIME }))] };
   if (method === 'resources/read') {
+    if (params?.uri === UI_URI_VIEW || params?.uri === UI_URI_GRAPH) return { contents: [{ uri: params.uri, mimeType: UI_MIME, text: drawn.get(params.uri) ?? UI_EMPTY }] };
     if (params?.uri !== DASH_URI) throw new Error(`Unknown resource: ${params?.uri}`);
     const { html } = await dash();
     return { contents: [{ uri: DASH_URI, mimeType: DASH_MIME, text: html }] };
