@@ -17,7 +17,7 @@ export async function receipt(spec, at) {
   if (spec.repo !== 't27') return undefined;
   const dir = spec.path.split('/').slice(-2, -1)[0];
   const [src, raw] = await Promise.all([at(spec.path), at(`.trinity/seals/${encodeURIComponent(dir ? `${dir}_${spec.module}` : spec.module)}.json`)]);
-  const j = raw ? JSON.parse(raw.toString()) : null, t = j?.tests || {}, n = (k) => Number(t[k]) || 0;
+  const j = (() => { try { return JSON.parse(raw.toString()); } catch { return null; } })(), t = j?.tests || {}, n = (k) => Number(t[k]) || 0;
   const cur = src ? `sha256:${createHash('sha256').update(src).digest('hex')}` : '', rec = j?.spec_hash ?? '';
   const v = W.seal_verdict(+!!j, put(j?.spec_path ?? '', 0), put(spec.path, 1), put(rec, 2), put(cur, 3), n('total'), n('passed'), n('failed'), (t.failing || []).length, n('vacuous'), +!!t.forced);
   return { verdict: S.VERDICT_NAME[v], fresh: !!W.is_fresh(put(rec, 2), put(cur, 3)), note: S.VERDICT_NOTE[v],
