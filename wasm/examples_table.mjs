@@ -15,7 +15,6 @@ export const T_RESET_NONE = 7;
 export const T_COUNT = 8;
 export const TOPICS = ["", "clocked", "comb", "fn", "test", "reset_async", "reset_sync", "reset_none"];
 export const NO_ROW = 4294967295;
-export const NO_POS = 4294967295;
 export const MAX_LINES = 40;
 export const ROWS = 10;
 export const EX_TOPIC = [1, 1, 2, 2, 3, 4, 4, 5, 6, 7];
@@ -26,8 +25,6 @@ export const EX_MODULE = [1, 2, 0, 1, 0, 0, 0, 0, 17, 2];
 export const EX_USE = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 export const EX_FOOTER = [0, 0, 0, 0, 0, 0, 0, 0, 257, 0];
 export const EX_WHY = ["Smallest clocked module: a module-level var is the register, fn on_clock() is the clock edge, the test steps it. No port list, no always, no clk.", "Two registers, a const bound, a branch in on_clock, and tests that set registers by assignment before stepping the clock.", "Smallest combinational module: pub fn on_comb(x: u8) -> u8 and a test with an assert statement.", "A real on_comb with an if-chain and four assert_eq tests; the params are the inputs and the return value is the output.", "Module header, pub fns with typed params and an arrow return, a loop, and four assert_eq tests.", "Tests inside a braced module, written assert(cond); the assert_eq and assert x == y forms are in the other examples.", "The test form `test \"name\" { assert x == y; }` with a quoted name.", "The default reset needs no code. The header says on_clock lowers to an async active-low reset: each var takes its declared init on !rst_n, and en gates the body.", "ResetKind (sync, async_assert_sync_release, async_assert_async_release) and a shift-register model of the release path. A sync reset is ordinary logic, not a module switch. No tests in this slice.", "The header states that nothing here is reset: the counters start from their var initialisers."];
-// t27c gen-js: fn find was not emitted -- this backend lowers declarations, not bodies.
-// t27c gen-js: fn has was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn topic_code was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn pick was not emitted -- this backend lowers declarations, not bodies.
 // t27c gen-js: fn row_lines was not emitted -- this backend lowers declarations, not bodies.
@@ -42,10 +39,13 @@ export const EX_WHY = ["Smallest clocked module: a module-level var is the regis
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
 // t27c gen-js: a TestBlock was not emitted -- it is checked by the compiler, not by the artifact.
+export const NO_POS = 4294967295;
+// t27c gen-js: fn find was not emitted -- this backend lowers declarations, not bodies.
+// t27c gen-js: fn has was not emitted -- this backend lowers declarations, not bodies.
 
 // Declaration order, which the spec's own laws depend on.
 export const __STRUCT_ORDER__ = [];
-export const __DECL_ORDER__ = ["PIN", "T_NONE", "T_CLOCKED", "T_COMB", "T_FN", "T_TEST", "T_RESET_ASYNC", "T_RESET_SYNC", "T_RESET_NONE", "T_COUNT", "TOPICS", "NO_ROW", "NO_POS", "MAX_LINES", "ROWS", "EX_TOPIC", "EX_PATH", "EX_FROM", "EX_TO", "EX_MODULE", "EX_USE", "EX_FOOTER", "EX_WHY"];
+export const __DECL_ORDER__ = ["PIN", "T_NONE", "T_CLOCKED", "T_COMB", "T_FN", "T_TEST", "T_RESET_ASYNC", "T_RESET_SYNC", "T_RESET_NONE", "T_COUNT", "TOPICS", "NO_ROW", "MAX_LINES", "ROWS", "EX_TOPIC", "EX_PATH", "EX_FROM", "EX_TO", "EX_MODULE", "EX_USE", "EX_FOOTER", "EX_WHY", "NO_POS"];
 
 // What this spec holds and this backend did not print. Empty is the whole
 // story most of the time; an entry here is a promise the artifact does not
