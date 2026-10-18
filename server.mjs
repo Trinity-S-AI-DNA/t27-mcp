@@ -20,6 +20,7 @@ import * as deck from './wasm/deck.mjs';
 import * as G from './wasm/spec_graph_view.mjs';
 import { slide } from './deck-view.mjs';
 import { check } from './check.mjs';
+import { examples } from './examples.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -655,6 +656,13 @@ const tools = [
       if (typeof source !== 'string' || !source.trim()) throw new Error('source must be non-empty .t27 text');
       return check(source);
     },
+  },
+  {
+    name: 't27_examples',
+    description:
+      'Short, compiler-checked worked examples of .t27 idioms, cut from the published corpus at a pinned commit (at most 40 lines each). topic: clocked, comb, fn, test, or reset (async, sync, none). Use it before writing a clocked or combinational module, a test block or a reset; an unknown topic returns the list of topics.',
+    inputSchema: { type: 'object', properties: { topic: { type: 'string', description: 'e.g. "clocked counter", "comb", "fn", "test", "async reset", "no reset"' }, fresh: { type: 'boolean' } }, required: ['topic'] },
+    handler: ({ topic, fresh }) => examples(String(topic ?? ''), (pin, path) => getText(`${RAW}/${pin}/${path}`, fresh)),
   },
   {
     name: 't27f_view',
