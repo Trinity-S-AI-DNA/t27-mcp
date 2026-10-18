@@ -282,30 +282,29 @@ sha256
   450af040b0c32dbd596498089cfd50ff75e8eb613efe63a440070fbf58c10798  dashboard.wasm
   5db0db9569d38a704674f0950fd66e7b63c5029fb900b555f1c86cb741e9944e  dashboard_table.mjs
 
-tg_unanswered, tg_dialogs, tg_history, tg_search, tg_contacts, tg_participants, tg_scheduled
-(epic gHashTag/t27#10066)
-  telegram.wasm         generated from specs/t27mcp/telegram.t27 (module T27mcpTelegram) by the C
-                        route: limit_for, chat_ok, query_ok, outcome
-  telegram_table.mjs    generated: t27c gen-js specs/t27mcp/telegram.t27 (tool names, argument kinds,
-                        limit flags, descriptions, the app address and env names, outcome texts,
-                        FOREIGN_TEXT, SEND_TEXT)
+One service: which home owns a tool name, what the one registry admits, who sees the mounted t27 tools
+(gHashTag/t27#10483, spec in #10484)
+  service.wasm          generated from specs/t27mcp/service.t27 (module T27mcpService) by the C route:
+                        admit, home_of, local_serves, t27_visible, name_ok
+  service_table.mjs     generated: t27c gen-js specs/t27mcp/service.t27 (homes, T27_PREFIXES, NAME_MAX,
+                        admit answers and ADMIT_TEXT, caller scopes, CODER_TOOLS)
 
 Rebuild on the Railway lab, never on the owner's Mac:
 
-  t27c gen-c  specs/t27mcp/telegram.t27 > telegram.c
-  t27c gen-js specs/t27mcp/telegram.t27 > telegram_table.mjs
+  t27c gen-c  specs/t27mcp/service.t27 > service.c
+  t27c gen-js specs/t27mcp/service.t27 > service_table.mjs
   zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
-      -Wl,--export=limit_for -Wl,--export=chat_ok -Wl,--export=query_ok \
-      -Wl,--export=outcome -o telegram.wasm telegram.c
+      -Wl,--export=admit -Wl,--export=local_serves -Wl,--export=t27_visible \
+      -Wl,--export=home_of -Wl,--export=name_ok -o service.wasm service.c
 
-../telegram.mjs forwards a read call the wasm accepted to the owner's TRI CLAW (service vibee-render, POST /mcp,
-X-Agent-Key from VIBEE_AGENT_KEY), which holds the logged-in Telegram session, and maps the HTTP status
-and JSON-RPC reply to an outcome the wasm names. t27c 0.5.2 (built from gHashTag/t27 master), zig 0.16.0.
-telegram.t27: 9 of 9 tests pass, 0 vacuous. Negative controls, each caught (1 failing test each): no
-limit cap; the key not checked; no answer not named; a 200 carrying a JSON-RPC error taken as ok; 401
-not denied; 403 not denied; a 5xx not failed; a 21-digit id accepted; a 201-character query accepted.
+../service.mjs writes a name into the instance's memory and calls the wasm; server.mjs keeps the tools
+local_serves() accepts (the t27 names), so the seven tg_* forwarders are gone from this server and answer at
+TRI CLAW's /mcp, the one endpoint. TRI CLAW imports service.mjs and server.mjs (`tools`, `call`) to mount the
+t27 tools through admit(). t27c 0.5.2 (built from gHashTag/t27 master), zig 0.16.0. service.t27: 9 of 9 tests
+pass, 0 vacuous; negative controls: t27ai, t2_ and a bare t27/t27f are not t27 names; a TRI CLAW tool under a
+t27 name is refused; an empty, upper-case, spaced, dashed or 65-character name is refused on either side.
 
 sha256
-  e1ed2d440b9040af4ca75b7d872f0f44ec395b14748b03209d8e99b7d893fa5c  telegram.t27 (source)
-  a753d9e6da1d2a18d7a273f60a6fa1cdabcbe112f6a3aef7aeb3e780dbc7ddb8  telegram.wasm
-  3046ca0d0042da073a06ec6551a06ace5890075d8c2fb050a0144541b380e9b2  telegram_table.mjs
+  3d7957837be8ac3de14b18ce1c0ecdde805f3f71d4d801b62d476b2e82f4a1ae  service.t27 (source, t27 #10484 @ 34acfcb1c)
+  e1807a3b6568e974f7af59ca7b9e0a7dc4b2431e215709bbfd37f2bbf49e08e4  service.wasm
+  e371cfea58e4317947bcb1655253e6840ead69042425ac598f07cba16caa4fd5  service_table.mjs
