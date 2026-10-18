@@ -255,3 +255,29 @@ sha256
   a2ea398b37bd4d85e279b69a7e3d12d7944a2f849a2d231db24973f5731d557b  hot.t27 (source)
   3e03cf2d4e9bd5c7ec5452b9434e26c9ff7b9aaeada9ea0979f77f727c0474b8  hot.mjs
   e271aa16b9b7afd9f79dac114bd043be957658f108f4a0a6438f6c074033b32a  hot.wasm
+
+t27_dashboard (epic gHashTag/t27#10066)
+  dashboard.wasm        generated from specs/t27mcp/dashboard.t27 (module T27mcpDashboard) by the C
+                        route: worst, health_tone, calls_tone, reply_tone, next_step -> u32
+  dashboard_table.mjs   generated: t27c gen-js specs/t27mcp/dashboard.t27 (grades, thresholds,
+                        NEXT_TEXT, UNKNOWN_TEXT and the page templates)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/dashboard.t27 > dashboard.c
+  t27c gen-js specs/t27mcp/dashboard.t27 > dashboard_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=worst -Wl,--export=health_tone -Wl,--export=calls_tone \
+      -Wl,--export=reply_tone -Wl,--export=next_step -o dashboard.wasm dashboard.c
+
+../dashboard.mjs counts calls per tool and fills the templates; the grades and the next step come
+from the wasm. t27c 0.5.2, zig 0.16.0, gHashTag/t27 5d45445e0 (dashboard.t27 not on master at build
+time). dashboard.t27: 8 of 8 tests pass, 0 vacuous. Negative controls, each caught: worst() returning
+the milder grade fails 2 tests; the 5-in-100 boundary made exclusive fails 1; an empty manifest read
+as ok fails 1; a failed call left ungraded fails 1; inclusive reply thresholds fail 1; next_step()
+putting size before a failed call fails 1.
+
+sha256
+  f271acdb3ece4eddef3dae5251350780f3ce4e470f57a919775e742a78906eef  dashboard.t27 (source)
+  450af040b0c32dbd596498089cfd50ff75e8eb613efe63a440070fbf58c10798  dashboard.wasm
+  5db0db9569d38a704674f0950fd66e7b63c5029fb900b555f1c86cb741e9944e  dashboard_table.mjs
