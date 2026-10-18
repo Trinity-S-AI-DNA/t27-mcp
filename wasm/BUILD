@@ -310,11 +310,13 @@ sha256
   e371cfea58e4317947bcb1655253e6840ead69042425ac598f07cba16caa4fd5  service_table.mjs
 
 Visual output: every answer that explains a spec, a flow, numbers or a piece of work carries one visual, by host,
-readable inline or redrawn (spec in gHashTag/t27#10504)
+readable inline or redrawn (spec in gHashTag/t27#10504; the UI resource in gHashTag/t27#10563)
   visual_output.wasm        generated from specs/t27mcp/visual_output.t27 (module T27mcpVisualOutput) by the C route:
-                            needs_visual, answer_channel, inline_readable, inline_source, answer_verdict
+                            needs_visual, answer_channel, inline_readable, inline_source, answer_verdict,
+                            client_host, carries_ui_resource
   visual_output_table.mjs   generated: t27c gen-js specs/t27mcp/visual_output.t27 (hosts, channels, answer kinds,
-                            INLINE_W, MIN_FONT_PX, INLINE_MAX_BYTES, verdicts, RULE_CLAUDE_CODE, RULE_TRI_CLAW)
+                            INLINE_W, MIN_FONT_PX, INLINE_MAX_BYTES, verdicts, RULE_CLAUDE_CODE, RULE_TRI_CLAW,
+                            UI_EXTENSION, UI_MIME, UI_URI_VIEW, UI_URI_GRAPH, UI_PAGE, UI_EMPTY)
 
 Rebuild on the Railway lab, never on the owner's Mac:
 
@@ -322,15 +324,26 @@ Rebuild on the Railway lab, never on the owner's Mac:
   t27c gen-js specs/t27mcp/visual_output.t27 > visual_output_table.mjs
   zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
       -Wl,--export=needs_visual -Wl,--export=answer_channel -Wl,--export=inline_readable \
-      -Wl,--export=inline_source -Wl,--export=answer_verdict -o visual_output.wasm visual_output.c
+      -Wl,--export=inline_source -Wl,--export=answer_verdict -Wl,--export=client_host \
+      -Wl,--export=carries_ui_resource -o visual_output.wasm visual_output.c
 
 ../visual.mjs measures an SVG (viewBox width, smallest font-size, bytes) and calls the wasm. server.mjs sends
 RULE_CLAUDE_CODE as the initialize result's `instructions`, which Claude Code puts in the model's system prompt,
 and t27f_view and t27f_graph print inline_source's answer under the path. TRI CLAW imports visual.mjs for
-RULE_TRI_CLAW. t27c 0.5.2, zig 0.16.0. visual_output.t27: 9 of 9 tests pass, 0 vacuous; a mutant readability
-rule (font_px >= 11, the width ignored) fails 3.
+RULE_TRI_CLAW.
+
+The UI resource (MCP Apps): at initialize server.mjs passes the client's capabilities to client_host (does it name
+UI_EXTENSION with UI_MIME among its mimeTypes); when carries_ui_resource says so, a t27f_view or t27f_graph result
+adds a `resource` content item: uri UI_URI_VIEW or UI_URI_GRAPH, mimeType UI_MIME, the SVG between UI_PAGE[1] and
+UI_PAGE[2] (no script, nothing fetched). The same URIs are each tool's tools/list _meta.ui.resourceUri, and
+resources/read returns the tool's latest drawing, UI_EMPTY before the first. A client that names nothing gets no
+resource, so the SVG's bytes never reach a model as text.
+
+t27c 0.5.2, zig 0.16.0. visual_output.t27: 12 of 12 tests pass, 0 vacuous; a mutant readability rule
+(font_px >= 11, the width ignored) fails 3; an MCP Apps host given the resource with no drawing fails 2; client_host
+ignoring the mime fails 2.
 
 sha256
-  06c1c5e73142e2f79fa5d7be037eace63c1f20597a6e33274ebf8e1b428b7584  visual_output.t27 (source, t27 #10504)
-  bf77b6d2c32f956e6a7d7a88b6d9685830021afeae5035fa1f7a7a284cec80b1  visual_output.wasm
-  a51bd1d499f81e31f1015319afb563fc658ae60530c586e319ae8868781a02ae  visual_output_table.mjs
+  2c44da44a1f662108a7b3558e763ff86e89db4bc9f49fe749dd7617051343960  visual_output.t27 (source, t27 #10563)
+  4976db837b17ed519136cda187a5aceef7e4d825737f87e751389b6831225ce4  visual_output.wasm
+  840d8b71b6f271ace5e09db32a2b09b427a322f6cbf0a7ba4b1ee7c1153de27d  visual_output_table.mjs
