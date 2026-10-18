@@ -17,14 +17,14 @@ export function note(name, bytes, failed) {
   ledger.set(name, { calls: r.calls + 1, errors: r.errors + (failed ? 1 : 0), max: Math.max(r.max, bytes) });
 }
 
-/** The page and the one-line reply, from the manifest `m` (null when unreachable) and the server's own facts. */
+/** The page and the one-line reply, from the manifest `m` ({error} when unreachable) and the server's own facts. */
 export function dashboard(m, server) {
   const h = m?.health || {}, rows = [...ledger].sort((a, b) => b[1].calls - a[1].calls);
   const sum = (k) => rows.reduce((n, [, r]) => (k === 'max' ? Math.max(n, r.max) : n + r[k]), 0);
   const ht = W.health_tone(m?.specCount || 0, h.fail || 0, h.warn || 0), ct = W.calls_tone(sum('calls'), sum('errors'));
   const rt = W.reply_tone(sum('max')), all = W.worst(W.worst(ht, ct), rt), next = S.NEXT_TEXT[W.next_step(ht, ct, rt)];
   const kv = (pairs) => pairs.map(([k, v]) => fill(S.KV_TEXT, k, v)).join('');
-  const commit = m?.generatedFrom?.shortCommit || 'unknown';
+  const commit = m?.generatedFrom?.shortCommit || (m?.error ? `unknown, manifest: ${String(m.error).replace(/[<>&']/g, '')}` : 'unknown');
   const panels = [
     [ht, kv([['commit', commit], ['specs', m?.specCount ?? 'unknown'], ['ok', h.ok ?? '-'], ['warn', h.warn ?? '-'], ['fail', h.fail ?? '-']])],
     [W.worst(ct, rt), S.TABLE_HEAD + rows.map(([n, r]) => fill(S.ROW_TEXT, W.worst(W.calls_tone(r.calls, r.errors), W.reply_tone(r.max)), n, r.calls, r.errors, r.max)).join('') + S.TABLE_TAIL],
@@ -32,7 +32,7 @@ export function dashboard(m, server) {
     [S.T_OK, kv([['version', server.version], ['tools', server.tools], ['site', server.site]])],
     [S.T_UNKNOWN, S.UNKNOWN_TEXT.map((t) => fill(S.LINE_TEXT, t)).join('')],
   ].map(([t, body], i) => fill(S.PANEL_TEXT, t, S.PANEL_TITLES[i], body));
-  const file = join(tmpdir(), 't27-mcp-dashboard.html');
+  const file = join(tmpdir(), `t27-mcp-dashboard-${process.pid}.html`);
   const html = fill(S.PAGE_TEXT, all, S.TONE_NAME[all], `corpus ${commit}, ${sum('calls')} calls`, panels.join(''));
   writeFileSync(file, html);
   const text = fill(S.AGENT_TEXT, S.TONE_NAME[all], commit, m?.specCount ?? 0, h.ok ?? 0, h.warn ?? 0, h.fail ?? 0, S.TONE_NAME[ht], sum('calls'), sum('errors'), sum('max'), S.TONE_NAME[rt], next, file);

@@ -742,7 +742,7 @@ const tools = [
       'The session dashboard (specs/t27mcp/dashboard.t27): corpus health, this session\'s calls, errors and largest reply per tool, and the next step, graded ok/unknown/warn/bad. Returns one line for the agent and writes an HTML page for the operator (its path is in the line); MCP Apps hosts render the same page from ui://t27/dashboard.',
     inputSchema: { type: 'object', properties: {} },
     _meta: { ui: { resourceUri: DASH_URI } },
-    handler: async () => dashboard(await manifest(false).catch(() => null), { version: VERSION, tools: tools.length, site: SITE }).text,
+    handler: async () => (await dash()).text,
   },
 ];
 
@@ -751,6 +751,9 @@ const byName = new Map(tools.map((t) => [t.name, t]));
 // ------------------------------------------------------------ jsonrpc / mcp
 
 const send = (m) => process.stdout.write(JSON.stringify(m) + '\n');
+
+// A manifest that cannot be fetched is shown with its error, not as a silent unknown.
+const dash = async () => dashboard(await manifest(false).catch((e) => ({ error: e.message })), { version: VERSION, tools: tools.length, site: SITE });
 
 async function handle(req) {
   const { method, params } = req;
@@ -766,17 +769,17 @@ async function handle(req) {
     try {
       const result = await tool.handler(params.arguments || {});
       text = typeof result === 'string' ? result : JSON.stringify(result, null, 1);
+      noteCall(tool.name, Buffer.byteLength(text), false);
     } catch (e) {
       noteCall(tool.name, 0, true); // the ledger the dashboard grades; a throw is a failed call
       throw e;
     }
-    noteCall(tool.name, Buffer.byteLength(text), false);
     return { content: [{ type: 'text', text }] };
   }
   if (method === 'resources/list') return { resources: [{ uri: DASH_URI, name: 't27 MCP dashboard', mimeType: DASH_MIME }] };
   if (method === 'resources/read') {
     if (params?.uri !== DASH_URI) throw new Error(`Unknown resource: ${params?.uri}`);
-    const { html } = dashboard(await manifest(false).catch(() => null), { version: VERSION, tools: tools.length, site: SITE });
+    const { html } = await dash();
     return { contents: [{ uri: DASH_URI, mimeType: DASH_MIME, text: html }] };
   }
   if (typeof req.id === 'undefined') return null;
