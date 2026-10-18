@@ -626,6 +626,26 @@ test "refused_graphs_are_not_drawn" {
     if (!(view_verdict(x) == VIEW_ERR_EDGE_NO_LINE)) __t27_assert_fail("\n  assertion failed:\n    view_verdict(x) = {any}\n    VIEW_ERR_EDGE_NO_LINE = {any}\n", .{ view_verdict(x), VIEW_ERR_EDGE_NO_LINE });
     if (!(view_verdict(blank_graph()) == ERR_SPEC_PATH)) __t27_assert_fail("\n  assertion failed:\n    view_verdict(blank_graph()) = {any}\n    ERR_SPEC_PATH = {any}\n", .{ view_verdict(blank_graph()), ERR_SPEC_PATH });
 }
+test "a_graph_at_node_capacity_is_drawn_in_a_tall_canvas" {
+    const base: SpecGraph = tutorial_08_graph();
+    var g: SpecGraph = base;
+    _ = &g;
+    while (g.node_count < MAX_NODES) {
+        g = with_node(g, NODE_CONST, LABEL_EXACT, "extra", 1, 1);
+    }
+    if (!(g.node_count == MAX_NODES)) __t27_assert_fail("\n  assertion failed:\n    g.node_count = {any}\n    MAX_NODES = {any}\n", .{ g.node_count, MAX_NODES });
+    if (!(view_verdict(g) == VIEW_OK)) __t27_assert_fail("\n  assertion failed:\n    view_verdict(g) = {any}\n    VIEW_OK = {any}\n", .{ view_verdict(g), VIEW_OK });
+    if (!(view_column_count(g) == view_column_count(base))) __t27_assert_fail("\n  assertion failed:\n    view_column_count(g) = {any}\n    view_column_count(base) = {any}\n", .{ view_column_count(g), view_column_count(base) });
+    if (!(view_width(g) == view_width(base))) __t27_assert_fail("\n  assertion failed:\n    view_width(g) = {any}\n    view_width(base) = {any}\n", .{ view_width(g), view_width(base) });
+    if (!(view_known_depth(g) >= 177)) __t27_assert_fail("\n  assertion failed:\n    view_known_depth(g) = {any}\n", .{ view_known_depth(g) });
+    if (!(view_height(g) > 11000)) __t27_assert_fail("\n  assertion failed:\n    view_height(g) = {any}\n", .{ view_height(g) });
+    if (!(view_height(g) > view_height(base))) __t27_assert_fail("\n  assertion failed:\n    view_height(g) = {any}\n    view_height(base) = {any}\n", .{ view_height(g), view_height(base) });
+    const last: u32 = MAX_NODES - 1;
+    if (!(view_node_column(g, last) == view_node_column(g, last - 1))) __t27_assert_fail("\n  assertion failed:\n    view_node_column(g, last) = {any}\n    view_node_column(g, last - 1) = {any}\n", .{ view_node_column(g, last), view_node_column(g, last - 1) });
+    if (!(view_node_y(g, last) == (view_node_y(g, last - 1) + VIEW_ROW_STEP))) __t27_assert_fail("\n  assertion failed:\n    view_node_y(g, last) = {any}\n    view_node_y(g, last - 1) + VIEW_ROW_STEP = {any}\n", .{ view_node_y(g, last), view_node_y(g, last - 1) + VIEW_ROW_STEP });
+    if (!(view_overlap(g, last, last - 1) == false)) __t27_assert_fail("\n  assertion failed:\n    view_overlap(g, last, last - 1) = {any}\n", .{ view_overlap(g, last, last - 1) });
+    if (!(view_overlap(g, last, last))) @panic("assertion failed");
+}
 test "nodes_bind_through_spec_graph" {
     const g: SpecGraph = tutorial_08_graph();
     if (!(view_node_widget(g, 0) == WIDGET_HONEYCOMB_CARD)) __t27_assert_fail("\n  assertion failed:\n    view_node_widget(g, 0) = {any}\n    WIDGET_HONEYCOMB_CARD = {any}\n", .{ view_node_widget(g, 0), WIDGET_HONEYCOMB_CARD });
@@ -758,8 +778,8 @@ pub const LABEL_EXACT: u8 = 0;
 pub const LABEL_KINDS: u8 = 4;
 pub const LABEL_SUGGESTED: u8 = 2;
 pub const LABEL_UNKNOWN: u8 = 3;
-pub const MAX_EDGES: u32 = 24;
-pub const MAX_NODES: u32 = 20;
+pub const MAX_EDGES: u32 = 254;
+pub const MAX_NODES: u32 = 192;
 pub const NODE_BENCH: u8 = 5;
 pub const NODE_CONST: u8 = 1;
 pub const NODE_FN: u8 = 2;
@@ -776,21 +796,21 @@ pub const SpecGraph = struct {
     spec_path: []const u8,
     line_count: u32,
     node_count: u32,
-    node_kind: [20]u8,
-    node_label: [20]u8,
-    node_name: [20][]const u8,
-    line_start: [20]u32,
-    line_end: [20]u32,
+    node_kind: [192]u8,
+    node_label: [192]u8,
+    node_name: [192][]const u8,
+    line_start: [192]u32,
+    line_end: [192]u32,
     edge_count: u32,
-    edge_kind: [24]u8,
-    edge_from: [24]u8,
-    edge_to: [24]u8,
-    edge_label: [24]u8,
-    edge_line: [24]u32,
+    edge_kind: [254]u8,
+    edge_from: [254]u8,
+    edge_to: [254]u8,
+    edge_label: [254]u8,
+    edge_line: [254]u32,
 };
 pub const VERDICT_KINDS: u8 = 19;
 pub fn blank_graph() SpecGraph {
-    return SpecGraph{ .ir_version = GRAPH_IR_VERSION, .spec_path = "", .line_count = 0, .node_count = 0, .node_kind = .{ 0 } ** 20, .node_label = .{ 0 } ** 20, .node_name = .{ "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" }, .line_start = .{ 0 } ** 20, .line_end = .{ 0 } ** 20, .edge_count = 0, .edge_kind = .{ 0 } ** 24, .edge_from = .{ 0 } ** 24, .edge_to = .{ 0 } ** 24, .edge_label = .{ 0 } ** 24, .edge_line = .{ 0 } ** 24 };
+    return SpecGraph{ .ir_version = GRAPH_IR_VERSION, .spec_path = "", .line_count = 0, .node_count = 0, .node_kind = .{ 0 } ** 192, .node_label = .{ 0 } ** 192, .node_name = .{ "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" }, .line_start = .{ 0 } ** 192, .line_end = .{ 0 } ** 192, .edge_count = 0, .edge_kind = .{ 0 } ** 254, .edge_from = .{ 0 } ** 254, .edge_to = .{ 0 } ** 254, .edge_label = .{ 0 } ** 254, .edge_line = .{ 0 } ** 254 };
 }
 pub fn kind_bit(k: u8) u32 {
     return @as(u32, @intCast(1)) << @intCast(@as(u32, @intCast(k)));

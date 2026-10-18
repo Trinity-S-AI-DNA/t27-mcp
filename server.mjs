@@ -22,6 +22,7 @@ import { slide } from './deck-view.mjs';
 import { check } from './check.mjs';
 import { examples } from './examples.mjs';
 import { brief, one, failureReasons } from './brief.mjs';
+import * as GX from './graph.mjs';
 
 const VERSION = '1.1.0';
 const SITE = process.env.T27_SITE || 'https://t27.ai';
@@ -178,9 +179,15 @@ const SPEC_FILTERS = {
 // deck look, specs/t27f/deck.t27 (gHashTag/t27); their bodies run as wasm/t27f.wasm and their constants
 // are wasm/reel.mjs and wasm/deck.mjs. This glue writes SVG only; the deck look is deck-view.mjs.
 // t27f_graph draws specs/t27f/spec_graph_view.t27 the same way; its constants are wasm/spec_graph_view.mjs.
+// t27f_outline and t27f_graph {path} read a spec's bytes through specs/t27f/spec_graph_export.t27 (graph.mjs is the I/O).
 const R = new WebAssembly.Instance(new WebAssembly.Module(readFileSync(new URL('./wasm/t27f.wasm', import.meta.url)))).exports;
 const PAINT = ['none', '#3a3f4b', '#3b82f6', '#8a7a3a', '#ffd45a', '#22c55e', '#1f2229']; // host palette by STYLE_*
 const esc = (v) => String(v).replace(/[<>&"]/g, (c) => `&#${c.charCodeAt(0)};`);
+// A corpus-relative .t27 path for the exporter tools; the fetch itself is specSource's.
+const specPath = (p) => {
+  if (typeof p !== 'string' || !/^[A-Za-z0-9_\-./]+\.t27$/.test(p) || p.startsWith('/') || p.split('/').includes('..')) throw new Error('path must be a corpus path to a .t27 file, e.g. specs/tutorial/08_modules_and_arrays.t27');
+  return p;
+};
 
 const tools = [
   {
@@ -668,28 +675,49 @@ const tools = [
     },
   },
   {
+    name: 't27f_outline',
+    description:
+      "A spec's structure from its T27F graph instead of its whole source: one line per declaration (kind, name, lines a-b, label) and per edge (calls, uses, constrains: from -> to, line of first use), plus a short derived list of which tests call which fn. Read by specs/t27f/spec_graph_export.t27, a deterministic byte scanner: every node and edge is EXACT, no derived or suggested edge is invented; the tested-by list is marked derived and is only an inversion of the exact test -> fn calls. The graph holds at most 192 nodes and 254 edges (top-level declarations and the edges between them); a larger spec is refused with that verdict, never truncated. Only the top level is read: nothing inside a struct or enum body, names are matched as text, not resolved.",
+    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Exact corpus path, e.g. specs/tutorial/08_modules_and_arrays.t27' }, fresh: { type: 'boolean' } }, required: ['path'] },
+    handler: async ({ path, fresh }) => GX.outline(R, specPath(path), await specSource(specPath(path), fresh)),
+  },
+  {
     name: 't27f_graph',
     description:
-      'Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, inference label and source lines. Only the spec_graph fixtures exist until t27c exports graphs: 0 tutorial 08, 1 tutorial 08 with a suggestion.',
-    inputSchema: { type: 'object', properties: { fixture: { type: 'integer', description: '0 tutorial 08 (default), 1 with a suggestion' }, out: { type: 'string', description: 'Output file (default: the temp directory)' } } },
-    handler: async ({ fixture = 0, out }) => {
-      if (fixture !== 0 && fixture !== 1) throw new Error('fixture must be 0 or 1');
-      const v = R.fx_verdict(fixture), hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
-      if (v !== G.VIEW_OK) throw new Error(`the view refuses fixture ${fixture}: verdict ${v}`);
+      "Draw the T27F graph view (specs/t27f/spec_graph_view.t27) of a spec graph as an SVG file and return its path: a box per node, a line per edge, placed and styled by the spec, labelled by kind, name, inference label and source lines. With path, the graph is the exact-only export of that corpus spec (specs/t27f/spec_graph_export.t27: no derived edges; at most 192 nodes and 254 edges, a larger spec is refused, never truncated). With fixture, the hand-read tutorial 08 graph: 0 as is, 1 with a suggestion. path wins when both are given.",
+    inputSchema: { type: 'object', properties: { path: { type: 'string', description: 'Exact corpus path, e.g. specs/tutorial/08_modules_and_arrays.t27' }, fixture: { type: 'integer', description: '0 tutorial 08 (default), 1 with a suggestion' }, out: { type: 'string', description: 'Output file (default: the temp directory)' }, fresh: { type: 'boolean' } } },
+    handler: async ({ path, fixture = 0, out, fresh }) => {
+      // q reads the same quantities from the exported graph (gx_*) or from a fixture (fx_*).
+      let q, tag;
+      if (path !== undefined) {
+        const p = specPath(path), v = GX.load(R, p, await specSource(p, fresh));
+        if (v !== G.GRAPH_OK) throw new Error(GX.refusal(R, p, v));
+        const g = { width: 'view_width', height: 'view_height', verdict: 'view_verdict', node_x: 'view_node_x', node_y: 'view_node_y', node_w: 'view_node_w', node_h: 'view_node_h', node_fill: 'view_node_fill', node_stroke: 'view_node_stroke', node_dash: 'view_node_dash', edge_x1: 'view_edge_x1', edge_y1: 'view_edge_y1', edge_x2: 'view_edge_x2', edge_y2: 'view_edge_y2', edge_stroke: 'view_edge_stroke', edge_dash: 'view_edge_dash', node_line_start: 'line_start', node_line_end: 'line_end' };
+        q = (k, ...a) => R[`gx_${g[k] ?? k}`](...a);
+        tag = p;
+      } else {
+        if (fixture !== 0 && fixture !== 1) throw new Error('fixture must be 0 or 1');
+        q = (k, ...a) => R[`fx_${k}`](fixture, ...a);
+        tag = `fixture ${fixture}`;
+      }
+      const v = q('verdict'), hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
+      if (v !== G.VIEW_OK) throw new Error(`the view refuses ${tag}: verdict ${v}`);
       const nm = (p, k) => Object.keys(G).find((c) => c.startsWith(p) && !c.endsWith('KINDS') && G[c] === k)?.slice(p.length).toLowerCase() ?? k;
-      const W = R.fx_width(fixture), H = R.fx_height(fixture), svg = [`<rect width="${W}" height="${H}" fill="${hex(G.VIEW_BACKDROP)}"/>`];
-      for (let j = 0; j < R.fx_edge_count(fixture); j++) {
-        const d = R.fx_edge_dash(fixture, j);
-        svg.push(`<line x1="${R.fx_edge_x1(fixture, j)}" y1="${R.fx_edge_y1(fixture, j)}" x2="${R.fx_edge_x2(fixture, j)}" y2="${R.fx_edge_y2(fixture, j)}" stroke="${hex(R.fx_edge_stroke(fixture, j))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}><title>${nm('EDGE_', R.fx_edge_kind(fixture, j))}, line ${R.fx_edge_line(fixture, j)}</title></line>`);
+      const W = q('width'), H = q('height'), svg = [`<rect width="${W}" height="${H}" fill="${hex(G.VIEW_BACKDROP)}"/>`];
+      for (let j = 0; j < q('edge_count'); j++) {
+        const d = q('edge_dash', j);
+        svg.push(`<line x1="${q('edge_x1', j)}" y1="${q('edge_y1', j)}" x2="${q('edge_x2', j)}" y2="${q('edge_y2', j)}" stroke="${hex(q('edge_stroke', j))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}><title>${nm('EDGE_', q('edge_kind', j))}, line ${q('edge_line', j)}</title></line>`);
       }
-      for (let i = 0; i < R.fx_node_count(fixture); i++) {
-        const x = R.fx_node_x(fixture, i), y = R.fx_node_y(fixture, i), d = R.fx_node_dash(fixture, i), a = R.fx_node_line_start(fixture, i), b = R.fx_node_line_end(fixture, i);
-        svg.push(`<rect x="${x}" y="${y}" width="${R.fx_node_w(fixture, i)}" height="${R.fx_node_h(fixture, i)}" rx="6" fill="${hex(R.fx_node_fill(fixture, i))}" stroke="${hex(R.fx_node_stroke(fixture, i))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}/>`,
-          `<text x="${x + 8}" y="${y + G.VIEW_FONT_PX + 6}" font-size="${G.VIEW_FONT_PX}" fill="${hex(G.VIEW_TEXT)}">${nm('NODE_', R.fx_node_kind(fixture, i))} ${i} - ${nm('LABEL_', R.fx_node_label(fixture, i))} - L${a}${b > a ? `-${b}` : ''}</text>`);
+      for (let i = 0; i < q('node_count'); i++) {
+        const x = q('node_x', i), y = q('node_y', i), d = q('node_dash', i), a = q('node_line_start', i), b = q('node_line_end', i);
+        const who = path !== undefined ? GX.nodeName(R, i) : String(i), w = q('node_w', i);
+        const full = `${nm('NODE_', q('node_kind', i))} ${who} - ${nm('LABEL_', q('node_label', i))} - L${a}${b > a ? `-${b}` : ''}`, fit = Math.floor((w - 16) / (G.VIEW_FONT_PX * 0.6)); // host text fitting; the box is the spec's
+        svg.push(`<rect x="${x}" y="${y}" width="${w}" height="${q('node_h', i)}" rx="6" fill="${hex(q('node_fill', i))}" stroke="${hex(q('node_stroke', i))}" stroke-width="1.5"${d ? ` stroke-dasharray="${d}"` : ''}/>`,
+          `<text x="${x + 8}" y="${y + G.VIEW_FONT_PX + 6}" font-size="${G.VIEW_FONT_PX}" fill="${hex(G.VIEW_TEXT)}"><title>${esc(full)}</title>${esc(full.length > fit ? `${full.slice(0, fit - 1)}...` : full)}</text>`);
       }
-      const path = out || join(tmpdir(), `t27f-graph-fx${fixture}.svg`);
-      writeFileSync(path, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif">${svg.join('')}</svg>\n`);
-      return `${path}\nT27F graph view, fixture ${fixture}: ${R.fx_node_count(fixture)} nodes, ${R.fx_edge_count(fixture)} edges, ${W}x${H}.`;
+      const file = out || join(tmpdir(), path !== undefined ? `t27f-graph-${path.replace(/[^A-Za-z0-9]+/g, '_')}.svg` : `t27f-graph-fx${fixture}.svg`);
+      writeFileSync(file, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="system-ui,sans-serif">${svg.join('')}</svg>\n`);
+      return `${file}\nT27F graph view, ${tag}: ${q('node_count')} nodes, ${q('edge_count')} edges, ${W}x${H}${path !== undefined ? ', exact only' : ''}.`;
     },
   },
 ];
