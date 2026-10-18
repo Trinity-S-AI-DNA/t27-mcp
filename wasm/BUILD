@@ -310,7 +310,7 @@ sha256
   e371cfea58e4317947bcb1655253e6840ead69042425ac598f07cba16caa4fd5  service_table.mjs
 
 Visual output: every answer that explains a spec, a flow, numbers or a piece of work carries one visual, by host,
-readable inline or redrawn (spec in gHashTag/t27#10504; the UI resource in gHashTag/t27#UIPR)
+readable inline or redrawn (spec in gHashTag/t27#10504; the UI resource in gHashTag/t27#10563)
   visual_output.wasm        generated from specs/t27mcp/visual_output.t27 (module T27mcpVisualOutput) by the C route:
                             needs_visual, answer_channel, inline_readable, inline_source, answer_verdict,
                             client_host, carries_ui_resource
@@ -344,6 +344,6 @@ t27c 0.5.2, zig 0.16.0. visual_output.t27: 12 of 12 tests pass, 0 vacuous; a mut
 ignoring the mime fails 2.
 
 sha256
-  2c44da44a1f662108a7b3558e763ff86e89db4bc9f49fe749dd7617051343960  visual_output.t27 (source, t27 #UIPR)
+  2c44da44a1f662108a7b3558e763ff86e89db4bc9f49fe749dd7617051343960  visual_output.t27 (source, t27 #10563)
   4976db837b17ed519136cda187a5aceef7e4d825737f87e751389b6831225ce4  visual_output.wasm
   840d8b71b6f271ace5e09db32a2b09b427a322f6cbf0a7ba4b1ee7c1153de27d  visual_output_table.mjs
