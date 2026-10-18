@@ -207,3 +207,31 @@ sha256
   21a9c9775f85f185f71dbf36fed8b1bf1b9903fc14f7eba2c57a45457d1f09bd  spec_brief.t27 (source)
   66bb16ab09ed795ce0f588b183fba9002384af6eca1df45cc842ed9ccae52c32  spec_brief.mjs
   316e8b14123da9e80eaf9861cc14ab3c7d3595a65978dd2a9645aa02a6732833  spec_brief.wasm
+
+t27_find (gHashTag/t27 issue, epic #10066)
+
+  find.wasm         generated from specs/t27mcp/find.t27 (module T27mcpFind, uses t27mcp::check_hints)
+                    by the C route: verdict(intent, name, path, tags) -> u32 and
+                    rank_key(intent, name, path, tags, lines) -> u32 (0 unless a hit)
+  find_table.mjs    generated: t27c gen-js specs/t27mcp/find.t27 (verdict codes, HIT_NOTE,
+                    MISS_NOTE, EMPTY_NOTE, LIMIT, STOPS, ALT_FROM, ALT_TO)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/t27mcp/find.t27 > find.c
+  t27c gen-js specs/t27mcp/find.t27 > find_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=verdict -Wl,--export=rank_key -o find.wasm find.c
+
+../find.mjs writes one manifest row into the instance memory per call and sorts by the returned
+key. t27c 0.5.2, zig 0.16.0, gHashTag/t27 0d6c3d3a8415 (find.t27 not yet on master at build time).
+find.t27: 13 of 13 tests pass, 0 vacuous. Negative controls: removing the covers() check fails 7
+tests; loosening the coverage ratio fails 2; dropping the name-half rule fails 1; matching inside a
+word instead of at a token start fails 1; treating numbers as noise again fails 2. dupe_scan --like: nothing in find.t27 is written
+elsewhere (the whole-repo run fails on master's own byte_sum duplicate, identical with and
+without find.t27).
+
+sha256
+  bc104b21cd349cc1d0674cca55d778eed3fafabc8d1a9a27f9b81c82a26c947f  find.t27 (source)
+  51043849996d40633099f1f2b6d9960f6eccea2b7e8f21031265965c5656ff1d  find_table.mjs
+  82b64bde50ec3ec42729b1d88b7b41525372c5fbcf39f02876bdb98a7e063e3a  find.wasm
