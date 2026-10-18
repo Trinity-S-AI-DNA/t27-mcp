@@ -5,8 +5,8 @@
   "type": "module",
   "bin": { "t27-mcp": "./server.mjs" },
   "main": "server.mjs",
-  "exports": { ".": "./server.mjs", "./service": "./service.mjs" },
-  "files": ["server.mjs", "graph.mjs", "check.mjs", "examples.mjs", "brief.mjs", "find.mjs", "dashboard.mjs", "service.mjs", "deck-view.mjs", "wasm/explorer.wasm", "wasm/check_hints.wasm", "wasm/check_hints.mjs", "wasm/examples.wasm", "wasm/examples_table.mjs", "wasm/spec_brief.wasm", "wasm/spec_brief.mjs", "wasm/find.wasm", "wasm/find_table.mjs", "wasm/dashboard.wasm", "wasm/dashboard_table.mjs", "wasm/service.wasm", "wasm/service_table.mjs", "wasm/t27f.wasm", "wasm/t27f.build", "wasm/hot.wasm", "wasm/hot.mjs", "wasm/spec_graph_view.mjs", "wasm/spec_graph_export.mjs", "wasm/spec_graph_outline.mjs", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
+  "exports": { ".": "./server.mjs", "./service": "./service.mjs", "./visual": "./visual.mjs" },
+  "files": ["server.mjs", "graph.mjs", "check.mjs", "examples.mjs", "brief.mjs", "find.mjs", "dashboard.mjs", "service.mjs", "visual.mjs", "deck-view.mjs", "wasm/explorer.wasm", "wasm/check_hints.wasm", "wasm/check_hints.mjs", "wasm/examples.wasm", "wasm/examples_table.mjs", "wasm/spec_brief.wasm", "wasm/spec_brief.mjs", "wasm/find.wasm", "wasm/find_table.mjs", "wasm/dashboard.wasm", "wasm/dashboard_table.mjs", "wasm/service.wasm", "wasm/service_table.mjs", "wasm/visual_output.wasm", "wasm/visual_output_table.mjs", "wasm/t27f.wasm", "wasm/t27f.build", "wasm/hot.wasm", "wasm/hot.mjs", "wasm/spec_graph_view.mjs", "wasm/spec_graph_export.mjs", "wasm/spec_graph_outline.mjs", "wasm/reel.mjs", "wasm/deck.mjs", "README.md"],
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.mjs",
