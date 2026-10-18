@@ -24,6 +24,7 @@ import { examples } from './examples.mjs';
 import { brief, one, failureReasons } from './brief.mjs';
 import * as GX from './graph.mjs';
 import { find } from './find.mjs';
+import { receipt } from './seal.mjs';
 import { dashboard, note as noteCall } from './dashboard.mjs';
 import { tgTools } from './telegram.mjs';
 
@@ -81,6 +82,7 @@ function get(url, read, init, fresh = false) {
 const getJson = (url, fresh) =>
   get(url, (r) => r.json(), { headers: { Accept: 'application/json' } }, fresh);
 const getText = (url, fresh) => get(url, (r) => r.text(), undefined, fresh);
+const getBytes = (url, fresh) => get(url, async (r) => Buffer.from(await r.arrayBuffer()), undefined, fresh);
 
 const manifest = (fresh) => getJson(`${SITE}/t27/manifest.json`, fresh);
 const atlas = (fresh) => getJson(`${SITE}/t27/universe-atlas.json`, fresh);
@@ -334,7 +336,7 @@ const tools = [
   {
     name: 't27_spec',
     description:
-      'One spec: a short record (health, why it fails, loss, type-check errors, failing backends, size, summary, tags; fields: true for the whole manifest record with AST node kinds and emitted bytes per backend) and, on request, its actual .t27 source text.',
+      'One spec: a short record (health, why it fails, loss, type-check errors, failing backends, size, summary, tags; fields: true for the whole manifest record with AST node kinds and emitted bytes per backend) and, on request, its actual .t27 source text. For a spec of the t27 repo it also returns `seal`, the receipt: verdict (verified | stale | unsealed | unknown | vacuous | failing | forced), fresh (the source is the sealed source), the sealed test counts, sealed_at and the builder. Rules in specs/t27mcp/seal_verdict.t27; only verified means the sealed tests passed on this text.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -361,6 +363,7 @@ const tools = [
       }
       const out = { ...(fields ? { ...hit, whyFailing: failureReasons(hit) } : one(hit)), sourceUrl: `${SITE}/t27/files/${hit.path}` };
       if (source) out.source = await specSource(hit.path, fresh);
+      out.seal = await receipt(hit, (p) => getBytes(`${RAW}/${REF}/${p}`, fresh).catch(() => null));
       return out;
     },
   },
