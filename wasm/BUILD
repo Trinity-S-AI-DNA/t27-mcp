@@ -93,6 +93,8 @@ t27_examples (gHashTag/t27#10081, epic #10066)
 
   examples.wasm        generated from specs/t27mcp/examples.t27 (module T27mcpExamples)
                        by the C route: topic_code(string) -> u32 and pick(u32, u32) -> u32.
+                       find and has come from specs/t27mcp/check_hints.t27 by `use`; gen-c
+                       inlines their bodies, so examples.c alone is enough.
   examples_table.mjs   generated: t27c gen-js specs/t27mcp/examples.t27 (PIN, TOPICS, and the
                        row tables EX_PATH, EX_FROM, EX_TO, EX_MODULE, EX_USE, EX_FOOTER, EX_WHY)
 
@@ -111,9 +113,9 @@ widened past 40 lines the row test fails (negative control). Every row's slice w
 reset_sync slice has none.
 
 sha256
-  30e9ff01219064942c47160c986fe756caf457a39b7977ca71635186d713e455  examples.t27 (source)
-  fe4aa36b9dbee38020366d82621648b194615f8e2dbb69a6370eec86162a28ed  examples_table.mjs
-  e725626f74d8f9612fdb92668c6b6f1ea6ac3c877558a1578ef3cddab00fa403  examples.wasm
+  cf6d4d628614b3995575d46a8e4cc54d3d2c4ada731212f29bcba2117c5b750c  examples.t27 (source)
+  26462aa3ec863a43b1fd2f82cf9484c9d664e28d8e3fb0a023e05217f627319b  examples_table.mjs
+  1f6364dcd0cc182fdd3e3e892e86fdf64b7d35e3300e1297862b52ced64f6b48  examples.wasm
 
 t27_spec brief mode and whyFailing (gHashTag/t27 issue, epic #10066)
 
