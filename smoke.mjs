@@ -101,6 +101,17 @@ const run = async () => {
   const raw = await call('t27_raw', { path: '/queen/modules.json' });
   check('t27_raw still fetches a legitimate site path', !!raw.modules, `${raw.modules?.length} modules`);
 
+  // t27_check runs offline: the compiler front end in wasm, the hints from specs/t27mcp/check_hints.t27.
+  const M = (body) => `module M;\npub fn f(a: u8) -> u8 {\n    ${body}\n}\n`;
+  const clean = await call('t27_check', { source: M('return a;') });
+  check('t27_check passes clean source with nothing to say', clean.ok && clean.diagnostics.length === 0);
+  const cast = await call('t27_check', { source: M('return (a as u3);') });
+  check('t27_check hints `as u3` with its line and source', !cast.ok && cast.diagnostics[0].line === 3 && /x & 7/.test(cast.diagnostics[0].hint) && /as u3/.test(cast.diagnostics[0].source), cast.diagnostics[0]?.line);
+  const kw = await call('t27_check', { source: 'module M;\npub fn f(in: u8) -> u8 {\n    return in;\n}\n' });
+  check('t27_check hints `in` as a name', /reserved keyword/.test(kw.diagnostics[0]?.hint));
+  const arity = await call('t27_check', { source: `${M('return a;')}pub fn g() -> u8 {\n    return f(1, 2);\n}\n` });
+  check('t27_check invents no hint for a message the spec does not know', !arity.ok && arity.diagnostics[0].hint === undefined, arity.diagnostics[0]?.message);
+
   child.kill();
   console.log(failed ? `\n${failed} check(s) failed` : `\nall checks passed`);
   process.exit(failed ? 1 : 0);
