@@ -28,7 +28,8 @@ directory is a second home for that math:
               modules needs a raised eval branch quota. It names no spec function and holds
               no number. The other 92 lines are the exporter glue, described below.
   t27f.wasm   built from export.zig + reel.zig + deck.zig + spec_graph_view.zig
-              + spec_graph_export.zig + spec_graph_outline.zig
+              + spec_graph_export.zig + spec_graph_outline.zig + work_graph.zig
+              + hud.zig
   ../graph.mjs  hand host I/O, 57 lines: writes the source bytes into wasm memory, reads
               values back through the gx_ exports and fills the `{}` marks of the
               templates in spec_graph_outline.mjs (OUTLINE_TEXT, REFUSAL_TEXT), left to
@@ -93,6 +94,24 @@ of the tested_by rule until the derive spec (gHashTag/t27#10198) lands.
 spec_graph_export.zig, spec_graph_view.zig and spec_graph_outline.zig each carry their own
 SpecGraph type, because t27c gen inlines the items a module uses. The glue copies the graph from
 the exporter's type into the other two field by field with `inline for`.
+
+The Live surface (wg_*/hs_* exports, t27f-graph's sibling page /t27f/live/) was added later.
+work_graph.t27 and hud.t27 are gHashTag/t27 master as of 23232812d0 (work_graph #11846's
+hud.t27 layout on #11752's foundation; spec_graph at #10231's caps, 1024 nodes and 4096
+edges). Regenerated with t27c 0.5.2 built from gHashTag/t27 master 23232812d0 (the splice
+fix #11012 is REQUIRED: 0.5.2 as released leaves hud.zig uncompilable, `node_of` ambiguous
+between queen/actors.t27 and t27f/work_graph.t27, UNRESOLVED and unspliced) and zig 0.16.0,
+on the owner's Mac -- the first build not on the lab; the record above is of that build.
+work_graph.zig carries its own WorkGraph type and hud.zig its own splice of the same spec;
+the glue copies the fields across, as gx_load does. The spec closure of the build (the roots
+and every spec a `use` pulls in, walked transitively) is 12 files; the `# closure` digest is
+sha256 over their sorted `<sha256>  <corpus path>` lines.
+
+Two root overrides in export.zig keep the build freestanding: `std_options_debug_threaded_io
+= null` and `std_options_debug_io = std.Io.failing`. hud_scene_of carries a spec assert whose
+fail path prints; without the overrides, reaching std.debug.print once pulls std.posix in and
+the wasm link fails. The failing Io is never called at runtime: the assert cannot fire, the
+graph refuses past the cap before hud_scene_of runs.
 
 Glue in export.zig (the 92 added lines; no spec logic):
   - an input buffer: gx_src_ptr and gx_src_cap (2 MiB; the biggest spec in specs/ is
