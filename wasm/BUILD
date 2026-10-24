@@ -28,7 +28,8 @@ directory is a second home for that math:
               modules needs a raised eval branch quota. It names no spec function and holds
               no number. The other 92 lines are the exporter glue, described below.
   t27f.wasm   built from export.zig + reel.zig + deck.zig + spec_graph_view.zig
-              + spec_graph_export.zig + spec_graph_outline.zig
+              + spec_graph_export.zig + spec_graph_outline.zig + work_graph.zig
+              + hud.zig
   ../graph.mjs  hand host I/O, 57 lines: writes the source bytes into wasm memory, reads
               values back through the gx_ exports and fills the `{}` marks of the
               templates in spec_graph_outline.mjs (OUTLINE_TEXT, REFUSAL_TEXT), left to
@@ -93,6 +94,24 @@ of the tested_by rule until the derive spec (gHashTag/t27#10198) lands.
 spec_graph_export.zig, spec_graph_view.zig and spec_graph_outline.zig each carry their own
 SpecGraph type, because t27c gen inlines the items a module uses. The glue copies the graph from
 the exporter's type into the other two field by field with `inline for`.
+
+The Live surface (wg_*/hs_* exports, t27f-graph's sibling page /t27f/live/) was added later.
+work_graph.t27 and hud.t27 are gHashTag/t27 master as of 23232812d0 (work_graph #11846's
+hud.t27 layout on #11752's foundation; spec_graph at #10231's caps, 1024 nodes and 4096
+edges). Regenerated with t27c 0.5.2 built from gHashTag/t27 master 23232812d0 (the splice
+fix #11012 is REQUIRED: 0.5.2 as released leaves hud.zig uncompilable, `node_of` ambiguous
+between queen/actors.t27 and t27f/work_graph.t27, UNRESOLVED and unspliced) and zig 0.16.0,
+on the owner's Mac -- the first build not on the lab; the record above is of that build.
+work_graph.zig carries its own WorkGraph type and hud.zig its own splice of the same spec;
+the glue copies the fields across, as gx_load does. The spec closure of the build (the roots
+and every spec a `use` pulls in, walked transitively) is 12 files; the `# closure` digest is
+sha256 over their sorted `<sha256>  <corpus path>` lines.
+
+Two root overrides in export.zig keep the build freestanding: `std_options_debug_threaded_io
+= null` and `std_options_debug_io = std.Io.failing`. hud_scene_of carries a spec assert whose
+fail path prints; without the overrides, reaching std.debug.print once pulls std.posix in and
+the wasm link fails. The failing Io is never called at runtime: the assert cannot fire, the
+graph refuses past the cap before hud_scene_of runs.
 
 Glue in export.zig (the 92 added lines; no spec logic):
   - an input buffer: gx_src_ptr and gx_src_cap (2 MiB; the biggest spec in specs/ is
@@ -309,3 +328,30 @@ sha256
   e1ed2d440b9040af4ca75b7d872f0f44ec395b14748b03209d8e99b7d893fa5c  telegram.t27 (source)
   a753d9e6da1d2a18d7a273f60a6fa1cdabcbe112f6a3aef7aeb3e780dbc7ddb8  telegram.wasm
   3046ca0d0042da073a06ec6551a06ace5890075d8c2fb050a0144541b380e9b2  telegram_table.mjs
+
+t27_paper_claims (gHashTag/t27 specs/numeric/paper_claims.t27)
+
+  paper_claims.wasm       generated from specs/numeric/paper_claims.t27 (module NumericPaperClaims)
+                          by the C route: row_verdict(u32) -> u32, row_recomputed(u32) -> u64 and
+                          count_verdict(u32, u32) -> u32. All arithmetic is exact u64 integers.
+  paper_claims_table.mjs  generated: t27c gen-js specs/numeric/paper_claims.t27 (PAPERS, VERDICTS,
+                          NONE, ROWS and the row tables CL_PAPER, CL_WHERE, CL_TEXT, CL_KIND,
+                          CL_ARG, CL_PRINTED, CL_UNIT, CL_DEC)
+
+Rebuild on the Railway lab, never on the owner's Mac:
+
+  t27c gen-c  specs/numeric/paper_claims.t27 > paper_claims.c
+  t27c gen-js specs/numeric/paper_claims.t27 > paper_claims_table.mjs
+  zig cc -target wasm32-wasi -Os -s -mexec-model=reactor -Wl,--no-entry -Wl,--gc-sections \
+      -Wl,--export=row_verdict -Wl,--export=row_recomputed -Wl,--export=count_verdict \
+      -o paper_claims.wasm paper_claims.c
+
+The tool recomputes 45 numbers printed in arXiv:2606.05017v5 (GoldenFloat), arXiv:2606.09686v3
+(Golden Ruler), the TNF paper, and 2 sums over the repo's own format tables: 34 fit, 8 do not
+fit, 3 not checkable. t27c 0.5.2, zig 0.16.0. paper_claims.t27: 10 of 10 tests pass, 0 vacuous
+(t27c test-report on the lab; the t27b JIT is arm64-only and was not run there).
+
+sha256
+  1e4aa0388afe5aa9388babbaac07cdeccb9e3341c04a90ba791c88a547adb71f  paper_claims.t27 (source)
+  4dd53304b17ce5af0081bcad5c5268c6ee7c7ac00af789043116a856dee1577f  paper_claims_table.mjs
+  4272a6afb6f8079edfe2e77da95f72b1dd7dcd04d96c2ac409ed1aa04c3b83ed  paper_claims.wasm
